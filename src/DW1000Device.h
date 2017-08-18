@@ -90,7 +90,7 @@ public:
 	boolean isInactive();
 
 
-private:
+protected:
 	//device ID
 	byte         _ownAddress[8];
 	byte         _shortAddress[2];

@@ -30,6 +30,11 @@
 #include "DW1000Ranging.h"
 #include "DW1000Device.h"
 
+#include "DW1000Node.h"
+#include "ConnectedRanging.h"
+DW1000Node testnode;
+ConnectedRangingClass conrange;
+
 DW1000RangingClass DW1000Ranging;
 
 
