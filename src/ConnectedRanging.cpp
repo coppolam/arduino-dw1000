@@ -41,6 +41,9 @@ void ConnectedRangingClass::init(char longAddress[], uint16_t networkID,const by
 	DW1000.setNetworkId(networkID);
 	DW1000.enableMode(mode);
 	DW1000.commitConfiguration();
+	DW1000.newReceive();
+	DW1000.receivePermanently(true);
+	DW1000.startReceive();
 }
 
 
