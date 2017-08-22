@@ -12,18 +12,21 @@
 
 class DW1000Node: public DW1000Device {
 public:
-	//Constructors and Destructor. All simply call the corresponding DW1000Device constructors.
+	// Constructors and Destructor. All simply call the corresponding DW1000Device constructors.
 	DW1000Node();
 	DW1000Node(byte address[], byte shortAddress[]);
-	DW1000Node(byte address[], boolean shortOne = false);
+	DW1000Node(byte address[], boolean shortOne = true);
 	~DW1000Node();
 
-	//Getters
+	// Getters
 	uint8_t getStatus();
 
-	//Setters
+	// Setters
 	void setStatus(uint8_t status);
 
+	// Comparisons
+	boolean operator==(const uint8_t cmp) const;
+	boolean operator!=(const uint8_t cmp) const;
 
 
 

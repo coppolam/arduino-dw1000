@@ -34,3 +34,11 @@ void DW1000Node::setStatus(uint8_t status){
 	_status = status;
 	return;
 }
+
+boolean DW1000Node::operator==(const uint8_t cmp) const {
+	return _veryShortAddress==cmp;
+}
+
+boolean DW1000Node::operator!=(const uint8_t cmp) const {
+	return _veryShortAddress!=cmp;
+}

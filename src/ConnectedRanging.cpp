@@ -2,7 +2,7 @@
  * ConnectedRanging.cpp
  *
  *  Created on: Aug 18, 2017
- *      Author: steven
+ *      Author: steven <stevenhelm@live.nl>
  */
 
 
@@ -11,7 +11,7 @@
 ConnectedRangingClass ConnectedRanging;
 
 // data buffer
-byte ConnectedRangingClass::_data[MAX_LEN_DATA];
+byte ConnectedRangingClass::_data[MAX_LEN_DATA] = {2, 1, POLL, 3, RANGE, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 4, RANGE_REPORT, 1, 2, 3, 4, 5, POLL_ACK};
 
 // pins on the arduino used to communicate with DW1000
 uint8_t ConnectedRangingClass::_RST;
@@ -29,50 +29,74 @@ volatile boolean ConnectedRangingClass::_receivedAck = false;
 // keeping track of send times
 uint32_t ConnectedRangingClass::_lastSent = 0;
 
-// nodes
+// nodes (_numNodes includes the current device, but _networkNodes does not)
 DW1000Node ConnectedRangingClass::_networkNodes[MAX_NODES];
 uint8_t ConnectedRangingClass::_numNodes = 0;
 
+// when it is time to send
+boolean ConnectedRangingClass::_timeToSend = false;
 
 
 
 
+// initialization function
 void ConnectedRangingClass::ConnectedRangingClass::init(char longAddress[], uint8_t numNodes){
 	// nodes to range to
-	_numNodes = numNodes;
-	initNodes();
+	if(numNodes<=MAX_NODES){
+		_numNodes = numNodes;
+	}
+	else{
+		Serial.println("The desired number of nodes exceeds MAX_NODES");
+		_numNodes=MAX_NODES;
+	}
 	DW1000.convertToByte(longAddress, _longAddress);
 	initDecawave(_longAddress, numNodes);
+	initNodes();
+	_lastSent = millis();
 
 }
 
+// initialization function
 void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	// nodes to range to
-	_numNodes = _numNodes;
-	initNodes();
+	if(numNodes<=MAX_NODES){
+		_numNodes = numNodes;
+	}
+	else{
+		Serial.println("The desired number of nodes exceeds MAX_NODES");
+		_numNodes=MAX_NODES;
+	}
 	for(int i=0;i<LEN_EUI;i++){
 		_longAddress[i] = veryShortAddress;
 	}
 	initDecawave(_longAddress, numNodes);
+	initNodes();
+	_lastSent = millis();
+	handleMessage();
 
 }
 
+// initialization function
 void ConnectedRangingClass::initNodes(){
 	byte address[LEN_EUI];
 	uint8_t remoteShortAddress = 1;
-	for (int i=0;i<_numNodes;i++){
+	for (int i=0;i<_numNodes-1;i++){
+		if(remoteShortAddress==_veryShortAddress){
+			remoteShortAddress++;
+		}
 		if(remoteShortAddress!=_veryShortAddress){
 			for (int j=0;j<LEN_EUI;j++){
 				address[j]=remoteShortAddress;
 			}
 			DW1000Node temp = DW1000Node(address);
 			_networkNodes[i]=temp;
-
+			remoteShortAddress++;
 		}
-		remoteShortAddress++;
+
 	}
 }
 
+// initialization function
 void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, const byte mode[], uint16_t networkID,uint8_t myRST, uint8_t mySS, uint8_t myIRQ){
 	_RST = myRST;
 	_SS = mySS;
@@ -96,7 +120,7 @@ void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, c
 	DW1000.attachSentHandler(handleSent);
 	DW1000.attachReceivedHandler(handleReceived);
 	receiver();
-	_lastSent = millis();
+
 }
 
 
@@ -187,4 +211,70 @@ void ConnectedRangingClass::handleReceived() {
 	_receivedAck = true;
 }
 
+void ConnectedRangingClass::handleMessage(){
+	uint8_t messagefrom = _data[0];
+	Serial.print("Message from: ");Serial.println(messagefrom);
+	if (messagefrom==_veryShortAddress-1){
+		Serial.println("It is time to send!");
+		_timeToSend = true;
+	}
+	uint16_t datapointer = 0;
+	uint8_t toDevice;
+	for (int i=0; i<_numNodes-1;i++){
+		datapointer++;
+		toDevice = _data[datapointer];
+		Serial.print("toDevice is: ");Serial.println(toDevice);
+		if(toDevice!=_veryShortAddress){
+			incrementDataPointer(&datapointer);
+		}
+		else{
+			processMessage(messagefrom,&datapointer);
+			incrementDataPointer(&datapointer);
+		}
+
+	}
+}
+
+// if this part of the message was not for the current device, skip the pointer ahead to next block of _data
+void ConnectedRangingClass::incrementDataPointer(uint16_t *ptr){
+	uint8_t msgtype = _data[*ptr+1];
+	switch(msgtype){
+		case POLL : *ptr += POLL_SIZE;
+					break;
+		case POLL_ACK : *ptr += POLL_ACK_SIZE;
+					break;
+		case RANGE : *ptr += RANGE_SIZE;
+					break;
+		case RANGE_REPORT : *ptr += RANGE_REPORT_SIZE;
+					break;
+	}
+
+}
+
+void ConnectedRangingClass::processMessage(uint8_t msgfrom, uint16_t *ptr){
+	uint8_t nodeIndex = msgfrom -1 - (uint8_t)(_veryShortAddress<msgfrom);
+	Serial.print(F("Message from: "));Serial.println(msgfrom);
+	Serial.print(F("nodeIndex: "));Serial.println(nodeIndex);
+	DW1000Node *distantNode = &_networkNodes[nodeIndex];
+	uint8_t msgtype = _data[*ptr+1];
+	if(msgtype == POLL){
+		distantNode->setStatus(2);
+		DW1000.getReceiveTimestamp(distantNode->timePollReceived);
+		Serial.print(F("POLL processed for distantNode "));Serial.println(distantNode->getShortAddress(),HEX);
+	}
+	else if(msgtype == POLL_ACK){
+		distantNode->setStatus(4);
+		DW1000.getReceiveTimestamp(distantNode->timePollAckReceived);
+		Serial.print(F("POLL ACK processed for distantNode "));Serial.println(distantNode->getShortAddress(),HEX);
+	}
+	else if(msgtype == RANGE){
+		distantNode->setStatus(6);
+		DW1000.getReceiveTimestamp(distantNode->timeRangeReceived);
+		Serial.print(F("RANGE processed for distantNode "));Serial.println(distantNode->getShortAddress(),HEX);
+	}
+	else if(msgtype == RANGE_REPORT){
+		distantNode->setStatus(0);
+		Serial.print(F("RANGE_REPORT processed for distantNode "));Serial.println(distantNode->getShortAddress(),HEX);
+	}
+}
 

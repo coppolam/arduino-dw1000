@@ -21,6 +21,22 @@
 #define transmitDelay 1000
 #define MAX_NODES 5
 
+// messages used in the ranging protocol
+#define POLL 0
+#define POLL_ACK 1
+#define RANGE 2
+#define RANGE_REPORT 3
+#define RANGE_FAILED 255
+
+// number of bytes a certain message type takes up
+#define POLL_SIZE 1
+#define POLL_ACK_SIZE 1
+#define RANGE_SIZE 13 // 1 + 12
+#define RANGE_REPORT_SIZE 5 // 1 + 4
+
+// reply time in us
+#define DEFAULT_REPLY_DELAY_TIME 7000
+
 
 class ConnectedRangingClass {
 
@@ -55,7 +71,10 @@ public:
 	static void handleSent();
 	static void handleReceived();
 
-
+	// message parsing and handling
+	static void handleMessage();
+	static void incrementDataPointer(uint16_t *ptr);
+	static void processMessage(uint8_t msgfrom,uint16_t *ptr);
 
 
 
@@ -88,6 +107,9 @@ protected:
 
 	// initializing those nodes
 	static void initNodes();
+
+	// when it is time to send
+	static boolean _timeToSend;
 
 
 
