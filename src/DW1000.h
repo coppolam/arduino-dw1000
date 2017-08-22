@@ -334,7 +334,7 @@ public:
 	static void enableMode(const byte mode[]);
 	
 	// use RX/TX specific and general default settings
-	static void setDefaults();
+	static void setDefaults(boolean extendedFrame = false);
 	
 	/* debug pretty print registers. */
 	static void getPrettyBytes(byte cmd, uint16_t offset, char msgBuffer[], uint16_t n);
@@ -344,6 +344,10 @@ public:
 	static uint8_t nibbleFromChar(char c);
 	static void convertToByte(char string[], byte* eui_byte);
 	
+	//convert char array to byte array and vice versa
+	void convertCharsToBytes(char string[], byte* bytes, uint16_t n);
+	void convertBytesToChars(byte* bytes, char string[],  uint16_t n);
+
 	// host-initiated reading of temperature and battery voltage
 	static void getTempAndVbat(float& temp, float& vbat);
 	

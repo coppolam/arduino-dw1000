@@ -2,7 +2,7 @@
  * DW1000Node.cpp
  *
  *  Created on: Aug 18, 2017
- *      Author: steven
+ *      Author: steven <stevenhelm@live.nl>
  */
 
 
@@ -12,12 +12,15 @@
 
 
 DW1000Node::DW1000Node() : DW1000Device(){
+	_veryShortAddress = _shortAddress[0];
 }
 
 DW1000Node::DW1000Node(byte address[], byte shortAddress[])  : DW1000Device(address, shortAddress){
+	_veryShortAddress = address[0];
 }
 
-DW1000Node::DW1000Node(byte address[], boolean shortOne = false) : DW1000Device(address,shortOne){
+DW1000Node::DW1000Node(byte address[], boolean shortOne) : DW1000Device(address,shortOne){
+	_veryShortAddress = address[0];
 }
 
 DW1000Node::~DW1000Node(){

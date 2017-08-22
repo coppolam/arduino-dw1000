@@ -2,7 +2,7 @@
  * DW1000Node.h
  *
  *  Created on: Aug 18, 2017
- *      Author: steven
+ *      Author: steven <stevenhelm@live.nl>
  */
 
 #ifndef _DW1000Node_H_INCLUDED
@@ -29,6 +29,7 @@ public:
 
 protected:
 	uint8_t _status = 0;
+	byte _veryShortAddress = 0;
 
 
 

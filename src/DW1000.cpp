@@ -913,6 +913,28 @@ void DW1000Class::convertToByte(char string[], byte* bytes) {
 	memcpy(bytes, eui_byte, LEN_EUI);
 }
 
+void DW1000Class::convertCharsToBytes(char string[], byte* bytes, uint16_t n) {
+	if(n>MAX_LEN_DATA){
+		n=MAX_LEN_DATA;
+	}
+	byte    convertbyte[n];
+	for(uint16_t i = 0; i < n; i++) {
+		convertbyte[i] = (byte)string[i];
+	}
+	memcpy(bytes, convertbyte, n);
+}
+
+void DW1000Class::convertBytesToChars(byte* bytes, char string[],  uint16_t n) {
+	if(n>MAX_LEN_DATA){
+		n=MAX_LEN_DATA;
+	}
+	char convertstring[n];
+	for(uint16_t i = 0; i < n; i++) {
+		convertstring[i] = (char)bytes[i];
+	}
+	memcpy(string, convertstring, n);
+}
+
 void DW1000Class::getTempAndVbat(float& temp, float& vbat) {
 	// follow the procedure from section 6.4 of the User Manual
 	byte step1 = 0x80; writeBytes(RF_CONF, 0x11, &step1, 1);
@@ -1215,13 +1237,18 @@ void DW1000Class::setPreambleCode(byte preacode) {
 	_preambleCode = preacode;
 }
 
-void DW1000Class::setDefaults() {
+void DW1000Class::setDefaults(boolean extendedFrame) {
 	if(_deviceMode == TX_MODE) {
 		
 	} else if(_deviceMode == RX_MODE) {
 		
 	} else if(_deviceMode == IDLE_MODE) {
-		useExtendedFrameLength(false);
+		if (extendedFrame){
+			useExtendedFrameLength(true);
+		}
+		else{
+			useExtendedFrameLength(false);
+		}
 		useSmartPower(false);
 		suppressFrameCheck(false);
 		//for global frame filtering
