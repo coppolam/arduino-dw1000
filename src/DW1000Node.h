@@ -20,6 +20,7 @@ public:
 
 	// Getters
 	uint8_t getStatus();
+	byte getVeryShortAddress();
 
 	// Setters
 	void setStatus(uint8_t status);
@@ -27,8 +28,6 @@ public:
 	// Comparisons
 	boolean operator==(const uint8_t cmp) const;
 	boolean operator!=(const uint8_t cmp) const;
-
-
 
 protected:
 	uint8_t _status = 0;

@@ -30,6 +30,10 @@ uint8_t DW1000Node::getStatus(){
 	return _status;
 }
 
+byte DW1000Node::getVeryShortAddress(){
+	return _veryShortAddress;
+}
+
 void DW1000Node::setStatus(uint8_t status){
 	_status = status;
 	return;
@@ -42,3 +46,5 @@ boolean DW1000Node::operator==(const uint8_t cmp) const {
 boolean DW1000Node::operator!=(const uint8_t cmp) const {
 	return _veryShortAddress!=cmp;
 }
+
+

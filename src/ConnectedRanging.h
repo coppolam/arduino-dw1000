@@ -18,7 +18,8 @@
 #include "DW1000Node.h"
 
 
-#define transmitDelay 1000
+// reset time in ms
+#define DEFAULT_RESET_TIME 1000
 #define MAX_NODES 5
 
 // messages used in the ranging protocol
@@ -26,16 +27,17 @@
 #define POLL_ACK 1
 #define RANGE 2
 #define RANGE_REPORT 3
-#define RANGE_FAILED 255
+#define RECEIVE_FAILED 255
 
 // number of bytes a certain message type takes up
 #define POLL_SIZE 1
 #define POLL_ACK_SIZE 1
-#define RANGE_SIZE 13 // 1 + 12
+#define RANGE_SIZE 16 // 1 + 15
 #define RANGE_REPORT_SIZE 5 // 1 + 4
+#define RECEIVE_FAILED_SIZE 1
 
 // reply time in us
-#define DEFAULT_REPLY_DELAY_TIME 7000
+#define DEFAULT_REPLY_DELAY_TIME 9000
 
 
 class ConnectedRangingClass {
@@ -56,11 +58,14 @@ public:
 	static void transmitData(byte datas[]);
 	static void transmitData(char datas[]);
 	static void transmitData(char datas[],uint16_t n);
+	static void transmitData(byte datas[], DW1000Time timeDelay);
 
 	static void loopReceive();
 	static void loopTransmit(char msg[],uint16_t n);
 	static void loopTransmit();
 
+	// main loop
+	static void loop();
 
 
 
@@ -71,10 +76,24 @@ public:
 	static void handleSent();
 	static void handleReceived();
 
-	// message parsing and handling
-	static void handleMessage();
+	// received message parsing and handling
+	static void handleReceivedData();
 	static void incrementDataPointer(uint16_t *ptr);
 	static void processMessage(uint8_t msgfrom,uint16_t *ptr);
+	static void computeRangeAsymmetric(DW1000Device* myDistantDevice, DW1000Time* myTOF);
+
+	// sent message handling
+	static void updateSentTimes();
+
+
+	// producing the transmit message
+	static void produceMessage();
+	static void addMessageToData(uint16_t *ptr,DW1000Node *distantNode);
+	static void addPollMessage(uint16_t *ptr, DW1000Node *distantNode);
+	static void addPollAckMessage(uint16_t *ptr, DW1000Node *distantNode);
+	static void addRangeMessage(uint16_t *ptr, DW1000Node *distantNode);
+	static void addRangeReportMessage(uint16_t *ptr, DW1000Node *distantNode);
+	static void addReceiveFailedMessage(uint16_t *ptr, DW1000Node *distantNode);
 
 
 
@@ -110,6 +129,10 @@ protected:
 
 	// when it is time to send
 	static boolean _timeToSend;
+
+	// remembering future time in case a RANGE message is sent
+	static boolean _rangeSent;
+	static DW1000Time _rangeTime;
 
 
 
