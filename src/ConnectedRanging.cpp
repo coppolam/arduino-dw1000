@@ -112,8 +112,8 @@ void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, c
 	_veryShortAddress = _longAddress[0];
 	//Write the address on the DW1000 chip
 	DW1000.setEUI(_longAddress);
-	Serial.print("very short device address: ");
-	Serial.println(_veryShortAddress);
+	Serial.print(F("very short device address: ")); Serial.println(_veryShortAddress);
+
 
 	//Setup DW1000 configuration
 	DW1000.newConfiguration();
@@ -334,6 +334,7 @@ void ConnectedRangingClass::processMessage(uint8_t msgfrom, uint16_t *ptr){
 		distantNode->setStatus(0);
 		float curRange;
 		memcpy(&curRange, _data+*ptr, 4);
+		*ptr += 4;
 		Serial.print(F("RANGE_REPORT processed for distantNode "));Serial.print(distantNode->getShortAddress(),HEX); Serial.print(F(" , Range is: ")); Serial.println(curRange);
 	}
 	// PROPERLY HANDLE RECEIVE FAILED MESSAGE (NOW IT JUST REPEATS THE PROTOCOL FROM SCRATCH)
@@ -351,7 +352,7 @@ void ConnectedRangingClass::computeRangeAsymmetric(DW1000Device* myDistantDevice
 	DW1000Time reply2 = (myDistantDevice->timeRangeSent-myDistantDevice->timePollAckReceived).wrap();
 
 	myTOF->setTimestamp((round1*round2-reply1*reply2)/(round1+round2+reply1+reply2));
-	/*
+
 	Serial.print("timePollAckReceived ");myDistantDevice->timePollAckReceived.print();
 	Serial.print("timePollSent ");myDistantDevice->timePollSent.print();
 	Serial.print("round1 "); Serial.println((long)round1.getTimestamp());
@@ -367,7 +368,7 @@ void ConnectedRangingClass::computeRangeAsymmetric(DW1000Device* myDistantDevice
 	Serial.print("timeRangeSent ");myDistantDevice->timeRangeSent.print();
 	Serial.print("timePollAckReceived ");myDistantDevice->timePollAckReceived.print();
 	Serial.print("reply2 "); Serial.println((long)reply2.getTimestamp());
-	 */
+
 }
 
 void ConnectedRangingClass::updateSentTimes(){
@@ -386,8 +387,6 @@ void ConnectedRangingClass::updateSentTimes(){
 void ConnectedRangingClass::produceMessage(){
 	uint16_t datapointer = 0;
 	memcpy(_data,&_veryShortAddress,1);
-	//Serial.print("very Short Address: ");Serial.print(_veryShortAddress);Serial.print(" , _data[0]: ");
-	//Serial.println(_data[0]);
 	datapointer++;
 	for(int i=0;i<_numNodes-1;i++){
 		addMessageToData(&datapointer,&_networkNodes[i]);
@@ -413,14 +412,14 @@ void ConnectedRangingClass::addMessageToData(uint16_t *ptr, DW1000Node *distantN
 void ConnectedRangingClass::addPollMessage(uint16_t *ptr, DW1000Node *distantNode){
 	distantNode->setStatus(1);
 	byte toSend[2] = {distantNode->getVeryShortAddress(),POLL};
-	memcpy(_data+*ptr,toSend,2);
+	memcpy(_data+*ptr,&toSend,2);
 	*ptr+=2;
 }
 
 void ConnectedRangingClass::addPollAckMessage(uint16_t *ptr, DW1000Node *distantNode){
 	distantNode->setStatus(3);
 	byte toSend[2] = {distantNode->getVeryShortAddress(),POLL_ACK};
-	memcpy(_data+*ptr,toSend,2);
+	memcpy(_data+*ptr,&toSend,2);
 	*ptr+=2;
 }
 
@@ -434,7 +433,7 @@ void ConnectedRangingClass::addRangeMessage(uint16_t *ptr, DW1000Node *distantNo
 	}
 	distantNode->timeRangeSent = _rangeTime;
 	byte toSend[2] = {distantNode->getVeryShortAddress(),RANGE};
-	memcpy(_data+*ptr,toSend,2);
+	memcpy(_data+*ptr,&toSend,2);
 	*ptr += 2;
 	distantNode->timePollSent.getTimestamp(_data+*ptr);
 	*ptr += 5;
@@ -447,7 +446,7 @@ void ConnectedRangingClass::addRangeMessage(uint16_t *ptr, DW1000Node *distantNo
 void ConnectedRangingClass::addRangeReportMessage(uint16_t *ptr, DW1000Node *distantNode){
 	distantNode->setStatus(7);
 	byte toSend[2] = {distantNode->getVeryShortAddress(),RANGE_REPORT};
-	memcpy(_data+*ptr,toSend,2);
+	memcpy(_data+*ptr,&toSend,2);
 	*ptr += 2;
 	float range = distantNode->getRange();
 	memcpy(_data+*ptr,&range,4);
@@ -457,7 +456,7 @@ void ConnectedRangingClass::addRangeReportMessage(uint16_t *ptr, DW1000Node *dis
 void ConnectedRangingClass::addReceiveFailedMessage(uint16_t *ptr, DW1000Node *distantNode){
 	distantNode->setStatus(0);
 	byte toSend[2] = {distantNode->getVeryShortAddress(),RECEIVE_FAILED};
-	memcpy(_data+*ptr,toSend,2);
+	memcpy(_data+*ptr,&toSend,2);
 	*ptr += 2;
 }
 

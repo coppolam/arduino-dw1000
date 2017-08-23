@@ -19,7 +19,7 @@
 
 
 // reset time in ms
-#define DEFAULT_RESET_TIME 1000
+#define DEFAULT_RESET_TIME 50
 #define MAX_NODES 5
 
 // messages used in the ranging protocol
@@ -37,7 +37,7 @@
 #define RECEIVE_FAILED_SIZE 1
 
 // reply time in us
-#define DEFAULT_REPLY_DELAY_TIME 9000
+#define DEFAULT_REPLY_DELAY_TIME 7000
 
 
 class ConnectedRangingClass {
