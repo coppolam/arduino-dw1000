@@ -29,6 +29,8 @@ public:
 	boolean operator==(const uint8_t cmp) const;
 	boolean operator!=(const uint8_t cmp) const;
 
+	void printNode();
+
 protected:
 	uint8_t _status = 0;
 	byte _veryShortAddress = 0;

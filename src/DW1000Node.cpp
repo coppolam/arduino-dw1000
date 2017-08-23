@@ -47,4 +47,15 @@ boolean DW1000Node::operator!=(const uint8_t cmp) const {
 	return _veryShortAddress!=cmp;
 }
 
+void DW1000Node::printNode(){
+	Serial.print(F("Node with Very Short Address: "));
+	Serial.print(_veryShortAddress,HEX);
+	Serial.print(F(" and Long Address: "));
+	for(int j=0; j<8;j++){
+		Serial.print(_ownAddress[j],HEX);
+	}
+	Serial.print(F(" and Status: "));
+	Serial.println(_status);
+
+}
 

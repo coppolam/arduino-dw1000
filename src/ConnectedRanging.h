@@ -19,7 +19,7 @@
 
 
 // reset time in ms
-#define DEFAULT_RESET_TIME 50
+#define DEFAULT_RESET_TIME 100
 #define MAX_NODES 5
 
 // messages used in the ranging protocol
@@ -37,7 +37,9 @@
 #define RECEIVE_FAILED_SIZE 1
 
 // reply time in us
-#define DEFAULT_REPLY_DELAY_TIME 7000
+#define DEFAULT_REPLY_DELAY_TIME 9000
+
+#define DEBUG 0
 
 
 class ConnectedRangingClass {
@@ -49,12 +51,13 @@ public:
 	// initialisation
 	static void init(char longAddress[], uint8_t numNodes);
 	static void init(uint8_t veryShortAddress, uint8_t numNodes);
-	static void initDecawave(byte longAddress[], uint8_t numNodes, const byte mode[] = DW1000.MODE_LONGDATA_FAST_ACCURACY, uint16_t networkID=0xDECA,uint8_t myRST=9, uint8_t mySS=SS, uint8_t myIRQ=2);
+	static void initDecawave(byte longAddress[], uint8_t numNodes, const byte mode[] = DW1000.MODE_LONGDATA_RANGE_ACCURACY, uint16_t networkID=0xDECA,uint8_t myRST=9, uint8_t mySS=SS, uint8_t myIRQ=2);
 
 	// set DW1000 in permanent receiving mode
 	static void receiver();
 
 	// transmit a byte array (maximum length of byte array is MAX_LEN_DATA)
+	static void transmitInit();
 	static void transmitData(byte datas[]);
 	static void transmitData(char datas[]);
 	static void transmitData(char datas[],uint16_t n);
@@ -133,6 +136,11 @@ protected:
 	// remembering future time in case a RANGE message is sent
 	static boolean _rangeSent;
 	static DW1000Time _rangeTime;
+
+	// extended frame;
+	static boolean _extendedFrame;
+
+	static uint16_t protTimes;
 
 
 
