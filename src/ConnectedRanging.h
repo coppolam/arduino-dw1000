@@ -19,7 +19,8 @@
 
 
 // reset time in ms
-#define DEFAULT_RESET_TIME 100
+#define DEFAULT_RESET_TIME 20
+#define INACTIVITY_RESET_TIME 4*DEFAULT_RESET_TIME
 #define MAX_NODES 5
 
 // messages used in the ranging protocol
@@ -37,7 +38,7 @@
 #define RECEIVE_FAILED_SIZE 1
 
 // reply time in us
-#define DEFAULT_REPLY_DELAY_TIME 9000
+#define DEFAULT_REPLY_DELAY_TIME 4000
 
 #define DEBUG 0
 
@@ -51,7 +52,7 @@ public:
 	// initialisation
 	static void init(char longAddress[], uint8_t numNodes);
 	static void init(uint8_t veryShortAddress, uint8_t numNodes);
-	static void initDecawave(byte longAddress[], uint8_t numNodes, const byte mode[] = DW1000.MODE_LONGDATA_RANGE_ACCURACY, uint16_t networkID=0xDECA,uint8_t myRST=9, uint8_t mySS=SS, uint8_t myIRQ=2);
+	static void initDecawave(byte longAddress[], uint8_t numNodes, const byte mode[] = DW1000.MODE_LONGDATA_FAST_ACCURACY, uint16_t networkID=0xDECA,uint8_t myRST=9, uint8_t mySS=SS, uint8_t myIRQ=2);
 
 	// set DW1000 in permanent receiving mode
 	static void receiver();
@@ -69,6 +70,11 @@ public:
 
 	// main loop
 	static void loop();
+
+	// reset functions
+	static void checkForReset();
+	static void resetInactive();
+	static void noteActivity();
 
 
 
@@ -141,6 +147,9 @@ protected:
 	static boolean _extendedFrame;
 
 	static uint16_t protTimes;
+
+	// reset variable
+	static uint32_t _lastActivity;
 
 
 

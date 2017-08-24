@@ -47,6 +47,9 @@ boolean ConnectedRangingClass::_extendedFrame = false;
 
 uint16_t ConnectedRangingClass::protTimes = 0;
 
+// last noted activity
+uint32_t ConnectedRangingClass::_lastActivity;
+
 
 
 // initialization function
@@ -82,6 +85,7 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	initDecawave(_longAddress, numNodes);
 	initNodes();
 	_lastSent = millis();
+	_lastActivity = millis();
 
 
 	Serial.print(F("Initialization complete, this device's Short Address is: "));
@@ -224,7 +228,9 @@ void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, c
 }
 
 void ConnectedRangingClass::loop(){
+	checkForReset();
 	if(_sentAck){
+		noteActivity();
 		_sentAck = false;
 		if(DEBUG){
 			Serial.println("Sent a message:");
@@ -238,6 +244,7 @@ void ConnectedRangingClass::loop(){
 		}
 	}
 	if(_receivedAck){
+		noteActivity();
 		_receivedAck = false;
 		//we read the datas from the modules:
 		// get message and parse
@@ -446,7 +453,7 @@ void ConnectedRangingClass::processMessage(uint8_t msgfrom, uint16_t *ptr){
 			Serial.print(F("Time RANGE sent: ")); distantNode->timeRangeSent.print(); Serial.print(F(" / ")); Serial.println(distantNode->timeRangeSent.getAsMicroSeconds()/1000000,15);
 			*/
 		}
-		Serial.print(F("Range is: ")); Serial.println(distance);
+		Serial.print(F(" Range is: ")); Serial.println(distance);
 
 	}
 	else if(msgtype == RANGE_REPORT){
@@ -522,6 +529,15 @@ void ConnectedRangingClass::updateSentTimes(){
 			DW1000.getTransmitTimestamp(rangeTime);
 			if(DEBUG){
 				Serial.print(F("RANGE message sent to: ")); Serial.print(distantNode->getShortAddress(),HEX); Serial.print(F(" with timestamp: "));
+				rangeTime.print(); Serial.print(F(" / ")); Serial.println(rangeTime.getAsMicroSeconds()/1000000,15);
+				//Serial.print(F("Stored RANGE time is: ")); distantNode->timeRangeSent.print(); Serial.print(F(" / ")); Serial.println(distantNode->timeRangeSent.getAsMicroSeconds()/1000000,15);
+			}
+		}
+		else if (distantNode->getStatus()==7){
+			DW1000Time rangeTime;
+			DW1000.getTransmitTimestamp(rangeTime);
+			if(DEBUG){
+				Serial.print(F("RANGE REPORT message sent to: ")); Serial.print(distantNode->getShortAddress(),HEX); Serial.print(F(" with timestamp: "));
 				rangeTime.print(); Serial.print(F(" / ")); Serial.println(rangeTime.getAsMicroSeconds()/1000000,15);
 				//Serial.print(F("Stored RANGE time is: ")); distantNode->timeRangeSent.print(); Serial.print(F(" / ")); Serial.println(distantNode->timeRangeSent.getAsMicroSeconds()/1000000,15);
 			}
@@ -614,5 +630,25 @@ void ConnectedRangingClass::addReceiveFailedMessage(uint16_t *ptr, DW1000Node *d
 	byte toSend[2] = {distantNode->getVeryShortAddress(),RECEIVE_FAILED};
 	memcpy(_data+*ptr,&toSend,2);
 	*ptr += 2;
+}
+
+
+// Reset functions
+void ConnectedRangingClass::checkForReset(){
+	if (millis() - _lastActivity > INACTIVITY_RESET_TIME){
+		resetInactive();
+	}
+}
+
+void ConnectedRangingClass::resetInactive(){
+	if(DEBUG){
+		Serial.println(F("Attempted to reset inactive device"));
+	}
+	receiver();
+	noteActivity();
+}
+
+void ConnectedRangingClass::noteActivity(){
+	_lastActivity = millis();
 }
 
