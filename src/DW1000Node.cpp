@@ -59,3 +59,15 @@ void DW1000Node::printNode(){
 
 }
 
+float DW1000Node::getRangeFrequency(){
+	if (_successRanges < 10){
+		_successRanges++;
+	}
+	else{
+		uint32_t newTime = millis();
+		_rangeFreq =  ((float)_successRanges)/(((float)(newTime-_rangeTimer))/1000.0);
+		_rangeTimer = newTime;
+		_successRanges = 0;
+	}
+	return _rangeFreq;
+}

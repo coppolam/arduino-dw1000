@@ -12,7 +12,7 @@ ConnectedRangingClass ConnectedRanging;
 
 // data buffer. Format of data buffer is like this: {from_address, to_address_1, message_type, additional_data, to_address_2, message_type, additional_data,.... to_address_n, message_type, additional data}
 // Every element takes up exactly 1 byte, except for additional_data, which takes up 15 bytes in the case of a RANGE message, and 4 bytes in the case of RANGE_REPORT
-//byte ConnectedRangingClass::_data[MAX_LEN_DATA] = {2, 1, POLL, 3, RANGE, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 4, RANGE_REPORT, 1, 2, 3, 4, 5, POLL_ACK};
+// Example: byte _data[] = {2, 1, POLL, 3, RANGE, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 4, RANGE_REPORT, 1, 2, 3, 4, 5, POLL_ACK};
 byte ConnectedRangingClass::_data[MAX_LEN_DATA];
 
 // pins on the arduino used to communicate with DW1000
@@ -271,52 +271,6 @@ void ConnectedRangingClass::loop(){
 
 }
 
-
-void ConnectedRangingClass::loopReceive(){
-	if(_receivedAck){
-		_receivedAck = false;
-		Serial.print("message received: ");
-		DW1000.getData(_data,MAX_LEN_DATA);
-		char msg[MAX_LEN_DATA];
-		DW1000.convertBytesToChars(_data,msg,MAX_LEN_DATA);
-		/*
-		for(int i=0;i<MAX_LEN_DATA;i++){
-			Serial.println(_data[i]);
-		}*/
-		Serial.println(msg);
-	}
-
-}
-
-/*
-void ConnectedRangingClass::loopTransmit(char msg[],uint16_t n){
-	if(_sentAck){
-		_sentAck = false;
-		Serial.print("Sent message: ");
-		Serial.println(msg);
-	}
-	if (millis()-_lastSent > transmitDelay){
-		_lastSent = millis();
-		transmitData(msg,n);
-	}
-
-}
-
-void ConnectedRangingClass::loopTransmit(){
-	if(_sentAck){
-		_sentAck = false;
-		Serial.println("message sent!");
-	}
-	if (millis()-_lastSent > transmitDelay){
-		_lastSent = millis();
-		_data[0]=68;
-		transmitData(_data);
-	}
-
-}
-*/
-
-
 void ConnectedRangingClass::receiver() {
 	DW1000.newReceive();
 	DW1000.setDefaults(_extendedFrame);
@@ -453,19 +407,22 @@ void ConnectedRangingClass::processMessage(uint8_t msgfrom, uint16_t *ptr){
 			Serial.print(F("Time RANGE sent: ")); distantNode->timeRangeSent.print(); Serial.print(F(" / ")); Serial.println(distantNode->timeRangeSent.getAsMicroSeconds()/1000000,15);
 			*/
 		}
-		Serial.print(F(" Range is: ")); Serial.println(distance);
+		Serial.print(F(" Range to device ")); Serial.print(distantNode->getVeryShortAddress());Serial.print(F(" is: ")); Serial.print(distance);
+		Serial.print(F(" m, update frequency is: "));Serial.print(distantNode->getRangeFrequency()); Serial.println(F(" Hz"));
 
 	}
 	else if(msgtype == RANGE_REPORT){
 		distantNode->setStatus(0);
 		float curRange;
 		memcpy(&curRange, _data+*ptr, 4);
+		*ptr += 4;
 		if(DEBUG){
 			Serial.print(F("RANGE REPORT received from distantNode "));Serial.print(distantNode->getShortAddress(),HEX);
 			//Serial.print(F("Individual bytes: "));Serial.print(*(_data+*ptr));Serial.print(F(" "));Serial.print(*(_data+*ptr+1));Serial.print(F(" "));Serial.print(*(_data+*ptr+2));Serial.print(F(" "));Serial.println(*(_data+*ptr+3));
 		}
-		Serial.print(F("Range is: ")); Serial.println(curRange);
-		*ptr += 4;
+		Serial.print(F(" Range to device ")); Serial.print(distantNode->getVeryShortAddress());Serial.print(F(" is: ")); Serial.print(curRange);
+		Serial.print(F(" m, update frequency is: "));Serial.print(distantNode->getRangeFrequency()); Serial.println(F(" Hz"));
+
 	}
 	// PROPERLY HANDLE RECEIVE FAILED MESSAGE (NOW IT JUST REPEATS THE PROTOCOL FROM SCRATCH)
 	else if(msgtype == RECEIVE_FAILED){

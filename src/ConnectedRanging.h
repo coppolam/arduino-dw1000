@@ -19,8 +19,10 @@
 
 
 // reset time in ms
-#define DEFAULT_RESET_TIME 20
+#define DEFAULT_RESET_TIME 50
 #define INACTIVITY_RESET_TIME 4*DEFAULT_RESET_TIME
+
+// maximum number of nodes that can be connected
 #define MAX_NODES 5
 
 // messages used in the ranging protocol
@@ -38,7 +40,7 @@
 #define RECEIVE_FAILED_SIZE 1
 
 // reply time in us
-#define DEFAULT_REPLY_DELAY_TIME 4000
+#define DEFAULT_REPLY_DELAY_TIME 5000
 
 #define DEBUG 0
 
@@ -57,16 +59,12 @@ public:
 	// set DW1000 in permanent receiving mode
 	static void receiver();
 
-	// transmit a byte array (maximum length of byte array is MAX_LEN_DATA)
+	// transmit functions
 	static void transmitInit();
 	static void transmitData(byte datas[]);
 	static void transmitData(char datas[]);
 	static void transmitData(char datas[],uint16_t n);
 	static void transmitData(byte datas[], DW1000Time timeDelay);
-
-	static void loopReceive();
-	static void loopTransmit(char msg[],uint16_t n);
-	static void loopTransmit();
 
 	// main loop
 	static void loop();
@@ -75,11 +73,6 @@ public:
 	static void checkForReset();
 	static void resetInactive();
 	static void noteActivity();
-
-
-
-
-
 
 	// handlers
 	static void handleSent();

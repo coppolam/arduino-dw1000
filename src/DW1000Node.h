@@ -31,9 +31,14 @@ public:
 
 	void printNode();
 
+	float getRangeFrequency();
+
 protected:
 	uint8_t _status = 0;
 	byte _veryShortAddress = 0;
+	uint32_t _successRanges = 0;
+	uint32_t _rangeTimer = millis();
+	float _rangeFreq = 0;
 
 
 
