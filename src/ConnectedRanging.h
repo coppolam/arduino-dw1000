@@ -42,7 +42,6 @@
 // reply time in us
 #define DEFAULT_REPLY_DELAY_TIME 5000
 
-#define DEBUG 0
 
 
 class ConnectedRangingClass {

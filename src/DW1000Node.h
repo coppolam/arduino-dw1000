@@ -10,6 +10,15 @@
 
 #include "DW1000Device.h"
 
+#define INIT_STATUS 0
+#define POLL_SENT 1
+#define POLL_RECEIVED 2
+#define POLL_ACK_SENT 3
+#define POLL_ACK_RECEIVED 4
+#define RANGE_SENT 5
+#define RANGE_RECEIVED 6
+#define RANGE_REPORT_SENT 7
+
 class DW1000Node: public DW1000Device {
 public:
 	// Constructors and Destructor. All simply call the corresponding DW1000Device constructors.
@@ -29,8 +38,8 @@ public:
 	boolean operator==(const uint8_t cmp) const;
 	boolean operator!=(const uint8_t cmp) const;
 
+	// Utility functions
 	void printNode();
-
 	float getRangeFrequency();
 
 protected:
