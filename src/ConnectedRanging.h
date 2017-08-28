@@ -39,8 +39,10 @@
 #define RANGE_REPORT_SIZE 5 // 1 + 4
 #define RECEIVE_FAILED_SIZE 1
 
+
 // reply time in us
 #define DEFAULT_REPLY_DELAY_TIME 5000
+
 
 
 
@@ -142,6 +144,8 @@ protected:
 
 	// reset variable
 	static uint32_t _lastActivity;
+
+	static uint16_t _maxLenData;
 
 
 

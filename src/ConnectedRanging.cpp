@@ -10,6 +10,7 @@
 
 ConnectedRangingClass ConnectedRanging;
 
+
 // data buffer. Format of data buffer is like this: {from_address, to_address_1, message_type, additional_data, to_address_2, message_type, additional_data,.... to_address_n, message_type, additional data}
 // Every element takes up exactly 1 byte, except for additional_data, which takes up 15 bytes in the case of a RANGE message, and 4 bytes in the case of RANGE_REPORT
 // Example: byte _data[] = {2, 1, POLL, 3, RANGE, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 4, RANGE_REPORT, 1, 2, 3, 4, 5, POLL_ACK};
@@ -50,6 +51,8 @@ uint16_t ConnectedRangingClass::protTimes = 0;
 // last noted activity
 uint32_t ConnectedRangingClass::_lastActivity;
 
+uint16_t ConnectedRangingClass::_maxLenData;
+
 
 
 // initialization function
@@ -66,7 +69,6 @@ void ConnectedRangingClass::ConnectedRangingClass::init(char longAddress[], uint
 	initDecawave(_longAddress, numNodes);
 	initNodes();
 	_lastSent = millis();
-
 }
 
 // initialization function
@@ -100,6 +102,9 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	for(int i=0; i<_numNodes-1;i++){
 		_networkNodes[i].printNode();
 	}
+
+
+
 }
 
 // initialization function
@@ -151,6 +156,10 @@ void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, c
 	DW1000.attachReceivedHandler(handleReceived);
 	receiver();
 
+	_maxLenData = numNodes*RANGE_SIZE+numNodes; // Worst case scenario: range message to all DW1000's means this message size
+	_extendedFrame = (MAX_LEN_DATA>125) ? true : false;
+	Serial.println(_maxLenData);
+
 }
 
 // Main function that should be called from arduino
@@ -166,7 +175,7 @@ void ConnectedRangingClass::loop(){
 		_receivedAck = false;
 		//we read the datas from the modules:
 		// get message and parse
-		DW1000.getData(_data, MAX_LEN_DATA);
+		DW1000.getData(_data, _maxLenData);
 		handleReceivedData();
 	}
 	if (_veryShortAddress==1 && millis()-_lastSent>DEFAULT_RESET_TIME){
@@ -206,21 +215,21 @@ void ConnectedRangingClass::transmitInit(){
 
 // Transmit a byte array
 void ConnectedRangingClass::transmitData(byte datas[]){
-	DW1000.setData(datas,MAX_LEN_DATA);
+	DW1000.setData(datas,_maxLenData);
 	DW1000.startTransmit();
 }
 
 // Transmit a byte array with a delay
 void ConnectedRangingClass::transmitData(byte datas[], DW1000Time timeDelay){
 	DW1000.setDelay(timeDelay);
-	DW1000.setData(datas,MAX_LEN_DATA);
+	DW1000.setData(datas,_maxLenData);
 	DW1000.startTransmit();
 }
 
 // Transmit a char array
 void ConnectedRangingClass::transmitData(char datas[]){
-	DW1000.convertCharsToBytes(datas, _data,MAX_LEN_DATA);
-	DW1000.setData(_data,MAX_LEN_DATA);
+	DW1000.convertCharsToBytes(datas, _data,_maxLenData);
+	DW1000.setData(_data,_maxLenData);
 	DW1000.startTransmit();
 }
 
