@@ -10,6 +10,7 @@
 
 #include "DW1000Device.h"
 
+// These are the statusses that a node can be set to
 #define INIT_STATUS 0
 #define POLL_SENT 1
 #define POLL_RECEIVED 2

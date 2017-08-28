@@ -5,8 +5,8 @@
  *      Author: steven <stevenhelm@live.nl>
  */
 
-//#ifndef _CONNECTEDRANGING_H_INCLUDED
-//#define _CONNECTEDRANGING_H_INCLUDED
+#ifndef _CONNECTEDRANGING_H_INCLUDED
+#define _CONNECTEDRANGING_H_INCLUDED
 
 
 
@@ -161,7 +161,7 @@ protected:
 
 extern ConnectedRangingClass ConnectedRanging;
 
-//#endif /* _CONNECTEDRANGING_H_INCLUDED */
+#endif /* _CONNECTEDRANGING_H_INCLUDED */
 
 
 
