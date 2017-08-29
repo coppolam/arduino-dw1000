@@ -14,14 +14,17 @@
 // Constructors and destructors
 DW1000Node::DW1000Node() : DW1000Device(){
 	_veryShortAddress = _shortAddress[0];
+	_state.vx = 0; _state.vy = 0; _state.z = 0;
 }
 
 DW1000Node::DW1000Node(byte address[], byte shortAddress[])  : DW1000Device(address, shortAddress){
 	_veryShortAddress = address[0];
+	_state.vx = 0; _state.vy = 0; _state.z = 0;
 }
 
 DW1000Node::DW1000Node(byte address[], boolean shortOne) : DW1000Device(address,shortOne){
 	_veryShortAddress = address[0];
+	_state.vx = 0; _state.vy = 0; _state.z = 0;
 }
 
 DW1000Node::~DW1000Node(){
@@ -36,10 +39,18 @@ byte DW1000Node::getVeryShortAddress(){
 	return _veryShortAddress;
 }
 
+State* DW1000Node::getState(){
+	return &_state;
+}
+
 // Setters
 void DW1000Node::setStatus(uint8_t status){
 	_status = status;
 	return;
+}
+
+void DW1000Node::setState(float vx, float vy, float z){
+	_state.vx = vx; _state.vy = vy; _state.z = z;
 }
 
 // Operators

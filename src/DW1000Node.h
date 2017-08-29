@@ -19,6 +19,13 @@
 #define RANGE_SENT 5
 #define RANGE_RECEIVED 6
 #define RANGE_REPORT_SENT 7
+#define RANGE_REPORT_RECEIVED 8
+
+struct State{
+	float vx;
+	float vy;
+	float z;
+};
 
 class DW1000Node: public DW1000Device {
 public:
@@ -31,9 +38,12 @@ public:
 	// Getters
 	uint8_t getStatus();
 	byte getVeryShortAddress();
+	State* getState();
 
 	// Setters
 	void setStatus(uint8_t status);
+	void setState(float vx, float vy, float z);
+
 
 	// Comparisons
 	boolean operator==(const uint8_t cmp) const;
@@ -49,6 +59,8 @@ protected:
 	uint32_t _successRanges = 0;
 	uint32_t _rangeTimer = millis();
 	float _rangeFreq = 0;
+
+	State _state;
 
 
 

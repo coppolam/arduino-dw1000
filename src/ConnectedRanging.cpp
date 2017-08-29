@@ -34,6 +34,7 @@ uint32_t ConnectedRangingClass::_lastSent = 0;
 
 // nodes (_numNodes includes the current device, but _networkNodes does not)
 DW1000Node ConnectedRangingClass::_networkNodes[MAX_NODES];
+DW1000Node* ConnectedRangingClass::_lastNode;
 uint8_t ConnectedRangingClass::_numNodes = 0;
 
 // when it is time to send
@@ -53,6 +54,17 @@ uint32_t ConnectedRangingClass::_lastActivity;
 
 uint16_t ConnectedRangingClass::_maxLenData;
 
+// Should velocities and height be sent along with other data?
+boolean ConnectedRangingClass::_addState = false;
+
+// Should velocities be extracted from data?
+boolean ConnectedRangingClass::_retrieveState = false;
+
+State ConnectedRangingClass::_state;
+
+// Handlers
+void (* ConnectedRangingClass::_handleNewRange)(void) = 0;
+
 
 
 // initialization function
@@ -68,7 +80,9 @@ void ConnectedRangingClass::ConnectedRangingClass::init(char longAddress[], uint
 	DW1000.convertToByte(longAddress, _longAddress);
 	initDecawave(_longAddress, numNodes);
 	initNodes();
+	_state.vx = 0; _state.vy = 0; _state.z = 0;
 	_lastSent = millis();
+	_lastActivity = millis();
 }
 
 // initialization function
@@ -86,6 +100,8 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	}
 	initDecawave(_longAddress, numNodes);
 	initNodes();
+	_state.vx = 0; _state.vy = 0; _state.z = 0;
+
 	_lastSent = millis();
 	_lastActivity = millis();
 
@@ -156,9 +172,9 @@ void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, c
 	DW1000.attachReceivedHandler(handleReceived);
 	receiver();
 
-	_maxLenData = numNodes*RANGE_SIZE+numNodes; // Worst case scenario: range message to all DW1000's means this message size
+	_maxLenData = (numNodes-1)*RANGE_SIZE+numNodes+STATE_SIZE; // Worst case scenario: range message to all DW1000's means this message size
 	_extendedFrame = (MAX_LEN_DATA>125) ? true : false;
-	Serial.println(_maxLenData);
+	Serial.print(F("Maximum data length is: "));Serial.println(_maxLenData);
 
 }
 
@@ -179,11 +195,11 @@ void ConnectedRangingClass::loop(){
 		handleReceivedData();
 	}
 	if (_veryShortAddress==1 && millis()-_lastSent>DEFAULT_RESET_TIME){
-		_lastSent = millis();
 		_timeToSend = true;
 	}
 	if(_timeToSend){
 		_timeToSend = false;
+		_lastSent = millis();
 		transmitInit();
 		produceMessage();
 		if(_rangeSent){
@@ -258,9 +274,16 @@ void ConnectedRangingClass::handleReceivedData(){
 	if (messagefrom==_veryShortAddress-1){
 		_timeToSend = true;
 	}
+	else if (messagefrom==_numNodes && _veryShortAddress == 1){
+		_timeToSend = true;
+	}
+	else{
+		_timeToSend = false;
+	}
+
+	uint16_t datapointer = 1;
 
 	// Decode the message to extract the part of _data meant for this device
-	uint16_t datapointer = 1;
 	uint8_t toDevice;
 	for (int i=0; i<_numNodes-1;i++){
 		toDevice = _data[datapointer];
@@ -272,21 +295,47 @@ void ConnectedRangingClass::handleReceivedData(){
 		}
 
 	}
+	if (_retrieveState){
+		retrieveState(&datapointer);
+		handleRanges();
+	}
+}
+
+void ConnectedRangingClass::handleRanges(){
+	for (int i=0; i<_numNodes;i++){
+		_lastNode = &_networkNodes[i];
+		if (_lastNode->getStatus()==RANGE_RECEIVED || _lastNode->getStatus()==RANGE_REPORT_RECEIVED){
+			_handleNewRange();
+		}
+	}
+}
+
+void ConnectedRangingClass::retrieveState(uint16_t *ptr){
+	_retrieveState = false;
+	float vx; float vy; float z;
+	memcpy(&vx,_data+*ptr,4);
+	*ptr += 4;
+	memcpy(&vy,_data+*ptr,4);
+	*ptr += 4;
+	memcpy(&z,_data+*ptr,4);
+	*ptr += 4;
+	_lastNode->setState(vx,vy,z);
 }
 
 // If a part of the message was not for the current device, skip the pointer ahead to next block of _data
 void ConnectedRangingClass::incrementDataPointer(uint16_t *ptr){
 	uint8_t msgtype = _data[*ptr+1];
+	*ptr += 1;
 	switch(msgtype){
-		case POLL : *ptr += POLL_SIZE+1;
+		case POLL : *ptr += POLL_SIZE;
 					break;
-		case POLL_ACK : *ptr += POLL_ACK_SIZE+1;
+		case POLL_ACK : *ptr += POLL_ACK_SIZE;
 					break;
-		case RANGE : *ptr += RANGE_SIZE+1;
+		case RANGE : *ptr += RANGE_SIZE;
 					break;
-		case RANGE_REPORT : *ptr += RANGE_REPORT_SIZE+1;
+		case RANGE_REPORT : *ptr += RANGE_REPORT_SIZE;
 					break;
-		case RECEIVE_FAILED : *ptr += RECEIVE_FAILED_SIZE+1;
+		case RECEIVE_FAILED : *ptr += RECEIVE_FAILED_SIZE;
 					break;
 	}
 
@@ -295,45 +344,52 @@ void ConnectedRangingClass::incrementDataPointer(uint16_t *ptr){
 // If a part of the message WAS meant for the current device, then extract the information from it and advance the data pointer to the next block of _data (this last step is actually redundant)
 void ConnectedRangingClass::processMessage(uint8_t msgfrom, uint16_t *ptr){
 	uint8_t nodeIndex = msgfrom -1 - (uint8_t)(_veryShortAddress<msgfrom);
-	DW1000Node *distantNode = &_networkNodes[nodeIndex];
+	_lastNode = &_networkNodes[nodeIndex];
 	uint8_t msgtype = _data[*ptr+1];
 	*ptr+=2;
 	if(msgtype == POLL){
-		distantNode->setStatus(POLL_RECEIVED);
-		DW1000.getReceiveTimestamp(distantNode->timePollReceived);
+		_lastNode->setStatus(POLL_RECEIVED);
+		DW1000.getReceiveTimestamp(_lastNode->timePollReceived);
 	}
 	else if(msgtype == POLL_ACK){
-		distantNode->setStatus(POLL_ACK_RECEIVED);
-		DW1000.getReceiveTimestamp(distantNode->timePollAckReceived);
+		_lastNode->setStatus(POLL_ACK_RECEIVED);
+		DW1000.getReceiveTimestamp(_lastNode->timePollAckReceived);
 	}
 	else if(msgtype == RANGE){
-		distantNode->setStatus(RANGE_RECEIVED);
-		DW1000.getReceiveTimestamp(distantNode->timeRangeReceived);
-		distantNode->timePollSent.setTimestamp(_data+*ptr);
+		_retrieveState = true;
+		_lastNode->setStatus(RANGE_RECEIVED);
+		DW1000.getReceiveTimestamp(_lastNode->timeRangeReceived);
+		_lastNode->timePollSent.setTimestamp(_data+*ptr);
 		*ptr += 5;
-		distantNode->timePollAckReceived.setTimestamp(_data+*ptr);
+		_lastNode->timePollAckReceived.setTimestamp(_data+*ptr);
 		*ptr += 5;
-		distantNode->timeRangeSent.setTimestamp(_data+*ptr);
+		_lastNode->timeRangeSent.setTimestamp(_data+*ptr);
 		*ptr += 5;
 		DW1000Time TOF;
-		computeRangeAsymmetric(distantNode, &TOF);
+		computeRangeAsymmetric(_lastNode, &TOF);
 		float distance = TOF.getAsMeters();
-		distantNode->setRange(distance);
-		Serial.print(F(" Range to device ")); Serial.print(distantNode->getVeryShortAddress());Serial.print(F(" is: ")); Serial.print(distance);
-		Serial.print(F(" m, update frequency is: "));Serial.print(distantNode->getRangeFrequency()); Serial.println(F(" Hz"));
+		_lastNode->setRange(distance);
+		if(_handleNewRange == 0){
+			Serial.print(F(" Range to device ")); Serial.print(_lastNode->getVeryShortAddress());Serial.print(F(" is: ")); Serial.print(distance);
+			Serial.print(F(" m, update frequency is: "));Serial.print(_lastNode->getRangeFrequency()); Serial.println(F(" Hz"));
+		}
 
 	}
 	else if(msgtype == RANGE_REPORT){
-		distantNode->setStatus(INIT_STATUS);
+		_retrieveState = true;
+		_lastNode->setStatus(RANGE_REPORT_RECEIVED);
 		float curRange;
 		memcpy(&curRange, _data+*ptr, 4);
 		*ptr += 4;
-		Serial.print(F(" Range to device ")); Serial.print(distantNode->getVeryShortAddress());Serial.print(F(" is: ")); Serial.print(curRange);
-		Serial.print(F(" m, update frequency is: "));Serial.print(distantNode->getRangeFrequency()); Serial.println(F(" Hz"));
+		_lastNode->setRange(curRange);
+		if(_handleNewRange == 0){
+			Serial.print(F(" Range to device ")); Serial.print(_lastNode->getVeryShortAddress());Serial.print(F(" is: ")); Serial.print(curRange);
+			Serial.print(F(" m, update frequency is: "));Serial.print(_lastNode->getRangeFrequency()); Serial.println(F(" Hz"));
+		}
 
 	}
 	else if(msgtype == RECEIVE_FAILED){
-		distantNode->setStatus(INIT_STATUS);
+		_lastNode->setStatus(INIT_STATUS);
 	}
 }
 
@@ -370,8 +426,21 @@ void ConnectedRangingClass::produceMessage(){
 	for(int i=0;i<_numNodes-1;i++){
 		addMessageToData(&datapointer,&_networkNodes[i]);
 	}
+	if (_addState){
+		addStateToData(&datapointer);
+	}
 
 
+}
+
+void ConnectedRangingClass::addStateToData(uint16_t *ptr){
+	_addState = false;
+	memcpy(_data+*ptr,&_state.vx,4);
+	*ptr += 4;
+	memcpy(_data+*ptr,&_state.vy,4);
+	*ptr += 4;
+	memcpy(_data+*ptr,&_state.z,4);
+	*ptr += 4;
 }
 
 void ConnectedRangingClass::addMessageToData(uint16_t *ptr, DW1000Node *distantNode){
@@ -384,6 +453,7 @@ void ConnectedRangingClass::addMessageToData(uint16_t *ptr, DW1000Node *distantN
 	case RANGE_SENT : addReceiveFailedMessage(ptr, distantNode); break;
 	case RANGE_RECEIVED : addRangeReportMessage(ptr, distantNode); break;
 	case RANGE_REPORT_SENT : addReceiveFailedMessage(ptr,distantNode); break;
+	case RANGE_REPORT_RECEIVED : addPollMessage(ptr,distantNode); break;
 	}
 
 }
@@ -403,6 +473,7 @@ void ConnectedRangingClass::addPollAckMessage(uint16_t *ptr, DW1000Node *distant
 }
 
 void ConnectedRangingClass::addRangeMessage(uint16_t *ptr, DW1000Node *distantNode){
+	_addState = true;
 	distantNode->setStatus(RANGE_SENT);
 	if(!_rangeSent){
 		_rangeSent = true;
@@ -423,6 +494,7 @@ void ConnectedRangingClass::addRangeMessage(uint16_t *ptr, DW1000Node *distantNo
 }
 
 void ConnectedRangingClass::addRangeReportMessage(uint16_t *ptr, DW1000Node *distantNode){
+	_addState = true;
 	distantNode->setStatus(RANGE_REPORT_SENT);
 	byte toSend[2] = {distantNode->getVeryShortAddress(),RANGE_REPORT};
 	memcpy(_data+*ptr,&toSend,2);
@@ -456,3 +528,12 @@ void ConnectedRangingClass::noteActivity(){
 	_lastActivity = millis();
 }
 
+void ConnectedRangingClass::setState(float vx, float vy, float z){
+	_state.vx = vx;
+	_state.vy = vy;
+	_state.z = z;
+}
+
+DW1000Node* ConnectedRangingClass::getDistantNode(){
+	return _lastNode;
+}

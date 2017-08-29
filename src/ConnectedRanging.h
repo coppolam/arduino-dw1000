@@ -19,8 +19,8 @@
 
 
 // reset time in ms
-#define DEFAULT_RESET_TIME 50
-#define INACTIVITY_RESET_TIME 4*DEFAULT_RESET_TIME
+#define DEFAULT_RESET_TIME 100
+#define INACTIVITY_RESET_TIME 2*DEFAULT_RESET_TIME
 
 // maximum number of nodes that can be connected
 #define MAX_NODES 5
@@ -42,6 +42,8 @@
 
 // reply time in us
 #define DEFAULT_REPLY_DELAY_TIME 5000
+
+#define STATE_SIZE 12
 
 
 
@@ -78,12 +80,15 @@ public:
 	// handlers
 	static void handleSent();
 	static void handleReceived();
+	static void handleRanges();
+	static void attachNewRange(void (* handleNewRange)(void)) { _handleNewRange = handleNewRange; };
 
 	// received message parsing and handling
 	static void handleReceivedData();
 	static void incrementDataPointer(uint16_t *ptr);
 	static void processMessage(uint8_t msgfrom,uint16_t *ptr);
 	static void computeRangeAsymmetric(DW1000Device* myDistantDevice, DW1000Time* myTOF);
+	static void retrieveState(uint16_t *ptr);
 
 	// sent message handling
 	static void updateSentTimes();
@@ -97,6 +102,13 @@ public:
 	static void addRangeMessage(uint16_t *ptr, DW1000Node *distantNode);
 	static void addRangeReportMessage(uint16_t *ptr, DW1000Node *distantNode);
 	static void addReceiveFailedMessage(uint16_t *ptr, DW1000Node *distantNode);
+	static void addStateToData(uint16_t *ptr);
+
+	// Setting state variables when they come in via serial
+	static void setState(float vx, float vy, float z);
+
+	// Getters
+	static DW1000Node* getDistantNode();
 
 
 
@@ -125,6 +137,7 @@ protected:
 
 	// nodes to range with
 	static DW1000Node _networkNodes[MAX_NODES];
+	static DW1000Node* _lastNode;
 	static uint8_t _numNodes;
 
 	// initializing those nodes
@@ -146,6 +159,17 @@ protected:
 	static uint32_t _lastActivity;
 
 	static uint16_t _maxLenData;
+
+	// Should velocities and height be sent along with other data?
+	static boolean _addState;
+
+	// Should velocities be extracted from data?
+	static boolean _retrieveState;
+
+	static State _state;
+
+	// Handlers
+	static void (* _handleNewRange)(void);
 
 
 
