@@ -160,11 +160,6 @@ protected:
 
 	static uint16_t _maxLenData;
 
-	// Should velocities and height be sent along with other data?
-	static boolean _addState;
-
-	// Should velocities be extracted from data?
-	static boolean _retrieveState;
 
 	static State _state;
 
