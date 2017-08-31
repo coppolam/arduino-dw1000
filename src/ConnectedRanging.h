@@ -14,8 +14,8 @@
 #include "DW1000.h"
 #include "DW1000Time.h"
 #include "DW1000Device.h"
-#include "DW1000Mac.h"
 #include "DW1000Node.h"
+//#include "Serial_Coder.h"
 
 
 // reset time in ms
@@ -45,6 +45,7 @@
 
 #define STATE_SIZE 12
 
+#define FLOAT_SIZE 4
 
 
 
@@ -105,10 +106,12 @@ public:
 	static void addStateToData(uint16_t *ptr);
 
 	// Setting state variables when they come in via serial
-	static void setState(float vx, float vy, float z);
+	static void setSelfState(float vx, float vy, float z);
 
 	// Getters
 	static DW1000Node* getDistantNode();
+
+	static void printDataBytes();
 
 
 
@@ -140,6 +143,9 @@ protected:
 	static DW1000Node* _lastNode;
 	static uint8_t _numNodes;
 
+	// self node
+	static DW1000Node _selfNode;
+
 	// initializing those nodes
 	static void initNodes();
 
@@ -161,10 +167,10 @@ protected:
 	static uint16_t _maxLenData;
 
 
-	static State _state;
-
 	// Handlers
 	static void (* _handleNewRange)(void);
+
+
 
 
 

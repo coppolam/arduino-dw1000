@@ -30,7 +30,7 @@
 #include "DW1000Time.h"
 #include "DW1000Mac.h"
 
-class DW1000Mac;
+//class DW1000Mac;
 
 class DW1000Device;
 

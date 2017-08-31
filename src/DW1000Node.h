@@ -9,6 +9,7 @@
 #define _DW1000Node_H_INCLUDED
 
 #include "DW1000Device.h"
+//#include "Serial_Coder.h"
 
 // These are the statusses that a node can be set to
 #define INIT_STATUS 0
@@ -21,10 +22,15 @@
 #define RANGE_REPORT_SENT 7
 #define RANGE_REPORT_RECEIVED 8
 
+#define STATE_VAR_SIZE 4
+
 struct State{
 	float vx;
 	float vy;
 	float z;
+	float r;
+	boolean stateUpdate[STATE_VAR_SIZE];
+
 };
 
 class DW1000Node: public DW1000Device {
@@ -39,10 +45,13 @@ public:
 	uint8_t getStatus();
 	byte getVeryShortAddress();
 	State* getState();
+	float getRange();
 
 	// Setters
 	void setStatus(uint8_t status);
-	void setState(float vx, float vy, float z);
+	void setState(float vx, float vy, float z, float r=0);
+	void setSingleState(float value, uint8_t type);
+	void setRange(float range);
 
 
 	// Comparisons

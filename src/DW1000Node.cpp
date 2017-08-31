@@ -31,6 +31,10 @@ DW1000Node::~DW1000Node(){
 }
 
 // Getters
+float DW1000Node::getRange(){
+	return _state.r;
+}
+
 uint8_t DW1000Node::getStatus(){
 	return _status;
 }
@@ -44,13 +48,27 @@ State* DW1000Node::getState(){
 }
 
 // Setters
+void DW1000Node::setRange(float range){
+	_state.r = range;
+}
+
 void DW1000Node::setStatus(uint8_t status){
 	_status = status;
 	return;
 }
 
-void DW1000Node::setState(float vx, float vy, float z){
-	_state.vx = vx; _state.vy = vy; _state.z = z;
+void DW1000Node::setState(float vx, float vy, float z, float r){
+	_state.vx = vx; _state.vy = vy; _state.z = z; _state.r = r;
+}
+
+void DW1000Node::setSingleState(float value, uint8_t type){
+	/*
+	switch(type){
+	case VX: _state.vx = value; break;
+	case VY: _state.vy = value; break;
+	case Z: _state.z = value; break;
+	case R: _state.r = value; break;
+	}*/
 }
 
 // Operators

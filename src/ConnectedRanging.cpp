@@ -36,6 +36,7 @@ uint32_t ConnectedRangingClass::_lastSent = 0;
 DW1000Node ConnectedRangingClass::_networkNodes[MAX_NODES];
 DW1000Node* ConnectedRangingClass::_lastNode;
 uint8_t ConnectedRangingClass::_numNodes = 0;
+DW1000Node ConnectedRangingClass::_selfNode;
 
 // when it is time to send
 boolean ConnectedRangingClass::_timeToSend = false;
@@ -55,7 +56,6 @@ uint32_t ConnectedRangingClass::_lastActivity;
 uint16_t ConnectedRangingClass::_maxLenData;
 
 
-State ConnectedRangingClass::_state;
 
 // Handlers
 void (* ConnectedRangingClass::_handleNewRange)(void) = 0;
@@ -69,13 +69,13 @@ void ConnectedRangingClass::ConnectedRangingClass::init(char longAddress[], uint
 		_numNodes = numNodes;
 	}
 	else{
-		Serial.println("The desired number of nodes exceeds MAX_NODES");
+		Serial.println(F("The desired number of nodes exceeds MAX_NODES"));
 		_numNodes=MAX_NODES;
 	}
 	DW1000.convertToByte(longAddress, _longAddress);
 	initDecawave(_longAddress, numNodes);
 	initNodes();
-	_state.vx = 0; _state.vy = 0; _state.z = 0;
+	setSelfState(0,0,0);
 	_lastSent = millis();
 	_lastActivity = millis();
 }
@@ -95,12 +95,13 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	}
 	initDecawave(_longAddress, numNodes);
 	initNodes();
-	_state.vx = 0; _state.vy = 0; _state.z = 0;
+	setSelfState(0,0,0);
 
 	_lastSent = millis();
 	_lastActivity = millis();
 
 
+	/*
 	Serial.print(F("Initialization complete, this device's Short Address is: "));
 	Serial.print(_veryShortAddress,HEX);
 	Serial.print(F(" Long Address: "));
@@ -112,7 +113,7 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	Serial.println(F("The distant devices in memory are: "));
 	for(int i=0; i<_numNodes-1;i++){
 		_networkNodes[i].printNode();
-	}
+	}*/
 
 
 
@@ -122,22 +123,25 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 void ConnectedRangingClass::initNodes(){
 	byte address[LEN_EUI];
 	byte shortaddress[2];
+	uint8_t index = 0;
 	uint8_t remoteShortAddress = 1;
-	for (int i=0;i<_numNodes-1;i++){
+	for (int i=0;i<_numNodes;i++){
+		for (int j=0;j<LEN_EUI;j++){
+			address[j]=remoteShortAddress;
+		}
+		for (int j=0;j<2;j++){
+			shortaddress[j]=remoteShortAddress;
+		}
+		DW1000Node temp = DW1000Node(address,shortaddress);
+
 		if(remoteShortAddress==_veryShortAddress){
-			remoteShortAddress++;
+			_selfNode = temp;
 		}
-		if(remoteShortAddress!=_veryShortAddress){
-			for (int j=0;j<LEN_EUI;j++){
-				address[j]=remoteShortAddress;
-			}
-			for (int j=0;j<2;j++){
-				shortaddress[j]=remoteShortAddress;
-			}
-			DW1000Node temp = DW1000Node(address,shortaddress);
-			_networkNodes[i]=temp;
-			remoteShortAddress++;
+		else if(remoteShortAddress!=_veryShortAddress){
+			_networkNodes[index] = temp;
+			index++;
 		}
+		remoteShortAddress++;
 
 	}
 }
@@ -169,12 +173,13 @@ void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, c
 
 	_maxLenData = (numNodes-1)*RANGE_SIZE+numNodes+STATE_SIZE; // Worst case scenario: range message to all DW1000's means this message size
 	_extendedFrame = (MAX_LEN_DATA>125) ? true : false;
-	Serial.print(F("Maximum data length is: "));Serial.println(_maxLenData);
+	//Serial.print(F("Maximum data length is: "));Serial.println(_maxLenData);
 
 }
 
 // Main function that should be called from arduino
 void ConnectedRangingClass::loop(){
+	//SerialCoder.getSerialData();
 	checkForReset();
 	if(_sentAck){
 		noteActivity();
@@ -197,6 +202,7 @@ void ConnectedRangingClass::loop(){
 		_lastSent = millis();
 		transmitInit();
 		produceMessage();
+
 		if(_rangeSent){
 			_rangeSent = false;
 			transmitData(_data);
@@ -279,8 +285,11 @@ void ConnectedRangingClass::handleReceivedData(){
 	}
 
 	uint16_t datapointer = 1;
+	//Serial.println(F("Got into handleReceivedData, timetosend is: "));Serial.println(_timeToSend);
+
 
 	retrieveState(&datapointer); // Get the state information from the sending node (stored at start of message)
+
 
 	// Decode the message to extract the part of _data meant for this device
 	uint8_t toDevice;
@@ -308,11 +317,11 @@ void ConnectedRangingClass::handleRanges(){
 
 void ConnectedRangingClass::retrieveState(uint16_t *ptr){
 	float vx; float vy; float z;
-	memcpy(&vx,_data+*ptr,4);
+	memcpy(&vx,_data+*ptr,FLOAT_SIZE);
 	*ptr += 4;
-	memcpy(&vy,_data+*ptr,4);
+	memcpy(&vy,_data+*ptr,FLOAT_SIZE);
 	*ptr += 4;
-	memcpy(&z,_data+*ptr,4);
+	memcpy(&z,_data+*ptr,FLOAT_SIZE);
 	*ptr += 4;
 	_lastNode->setState(vx,vy,z);
 }
@@ -341,6 +350,9 @@ void ConnectedRangingClass::processMessage(uint8_t msgfrom, uint16_t *ptr){
 
 	uint8_t msgtype = _data[*ptr+1];
 	*ptr+=2;
+	//Serial.print(F("Message type is: ")); Serial.println(msgtype);
+	//Serial.print(F("Last node is: ")); Serial.println(_lastNode->getVeryShortAddress());
+
 	if(msgtype == POLL){
 		_lastNode->setStatus(POLL_RECEIVED);
 		DW1000.getReceiveTimestamp(_lastNode->timePollReceived);
@@ -425,17 +437,16 @@ void ConnectedRangingClass::produceMessage(){
 	for(int i=0;i<_numNodes-1;i++){
 		addMessageToData(&datapointer,&_networkNodes[i]);
 	}
-
-
 }
 
 void ConnectedRangingClass::addStateToData(uint16_t *ptr){
-	memcpy(_data+*ptr,&_state.vx,4);
-	*ptr += 4;
-	memcpy(_data+*ptr,&_state.vy,4);
-	*ptr += 4;
-	memcpy(_data+*ptr,&_state.z,4);
-	*ptr += 4;
+	State* selfState = _selfNode.getState();
+	memcpy(_data+*ptr,&(selfState->vx),FLOAT_SIZE);
+	*ptr += FLOAT_SIZE;
+	memcpy(_data+*ptr,&(selfState->vy),FLOAT_SIZE);
+	*ptr += FLOAT_SIZE;
+	memcpy(_data+*ptr,&(selfState->z),FLOAT_SIZE);
+	*ptr += FLOAT_SIZE;
 }
 
 void ConnectedRangingClass::addMessageToData(uint16_t *ptr, DW1000Node *distantNode){
@@ -521,12 +532,18 @@ void ConnectedRangingClass::noteActivity(){
 	_lastActivity = millis();
 }
 
-void ConnectedRangingClass::setState(float vx, float vy, float z){
-	_state.vx = vx;
-	_state.vy = vy;
-	_state.z = z;
+void ConnectedRangingClass::setSelfState(float vx, float vy, float z){
+	_selfNode.setState(vx,vy,z);
 }
 
 DW1000Node* ConnectedRangingClass::getDistantNode(){
 	return _lastNode;
+}
+
+void ConnectedRangingClass::printDataBytes(){
+	Serial.println(F("data bytes: "));
+	for(uint16_t i=0;i<_maxLenData;i++){
+		Serial.print(_data[i]);Serial.print(F(" "));
+	}
+	Serial.println(F(" "));
 }
