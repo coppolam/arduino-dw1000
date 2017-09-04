@@ -13,17 +13,16 @@
 
 #include "DW1000.h"
 #include "DW1000Time.h"
-#include "DW1000Device.h"
 #include "DW1000Node.h"
-//#include "Serial_Coder.h"
+#include "Serial_Coder.h"
+
 
 
 // reset time in ms
 #define DEFAULT_RESET_TIME 100
 #define INACTIVITY_RESET_TIME 2*DEFAULT_RESET_TIME
 
-// maximum number of nodes that can be connected
-#define MAX_NODES 5
+
 
 // messages used in the ranging protocol
 #define POLL 0
@@ -40,6 +39,7 @@
 #define RECEIVE_FAILED_SIZE 1
 
 
+
 // reply time in us
 #define DEFAULT_REPLY_DELAY_TIME 5000
 
@@ -47,6 +47,15 @@
 
 #define FLOAT_SIZE 4
 
+// maximum number of nodes that can be connected. Warning: Consumes a lot of SRAM. Need to optimize if going beyond 4 nodes.
+#define MAX_NODES 4
+#define MAX_LEN_DATA (MAX_NODES-1)*RANGE_SIZE+MAX_NODES+STATE_SIZE
+
+// Serial message types
+#define VX 0
+#define VY 1
+#define Z 2
+#define R 3
 
 
 class ConnectedRangingClass {
@@ -112,6 +121,9 @@ public:
 	static DW1000Node* getDistantNode();
 
 	static void printDataBytes();
+
+	// Handling new state receive over serial
+	static void handleNewSelfStateValue(float value, uint8_t type);
 
 
 

@@ -8,6 +8,7 @@
 
 #include "ConnectedRanging.h"
 
+
 ConnectedRangingClass ConnectedRanging;
 
 
@@ -64,6 +65,7 @@ void (* ConnectedRangingClass::_handleNewRange)(void) = 0;
 
 // initialization function
 void ConnectedRangingClass::ConnectedRangingClass::init(char longAddress[], uint8_t numNodes){
+	SerialCoder.attachStateHandle(handleNewSelfStateValue);
 	// nodes to range to
 	if(numNodes<=MAX_NODES){
 		_numNodes = numNodes;
@@ -82,6 +84,7 @@ void ConnectedRangingClass::ConnectedRangingClass::init(char longAddress[], uint
 
 // initialization function
 void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
+	SerialCoder.attachStateHandle(handleNewSelfStateValue);
 	// nodes to range to
 	if(numNodes<=MAX_NODES){
 		_numNodes = numNodes;
@@ -101,7 +104,7 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	_lastActivity = millis();
 
 
-	/*
+
 	Serial.print(F("Initialization complete, this device's Short Address is: "));
 	Serial.print(_veryShortAddress,HEX);
 	Serial.print(F(" Long Address: "));
@@ -109,11 +112,11 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	for(int i=0; i<LEN_EUI;i++){
 		Serial.print(_longAddress[i]);
 	}
-	Serial.println(" ");
+	Serial.println(F(" "));
 	Serial.println(F("The distant devices in memory are: "));
 	for(int i=0; i<_numNodes-1;i++){
 		_networkNodes[i].printNode();
-	}*/
+	}
 
 
 
@@ -157,7 +160,7 @@ void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, c
 	_veryShortAddress = _longAddress[0];
 	//Write the address on the DW1000 chip
 	DW1000.setEUI(_longAddress);
-	Serial.print(F("very short device address: ")); Serial.println(_veryShortAddress);
+	//Serial.print(F("very short device address: ")); Serial.println(_veryShortAddress);
 
 
 	//Setup DW1000 configuration
@@ -173,13 +176,13 @@ void ConnectedRangingClass::initDecawave(byte longAddress[], uint8_t numNodes, c
 
 	_maxLenData = (numNodes-1)*RANGE_SIZE+numNodes+STATE_SIZE; // Worst case scenario: range message to all DW1000's means this message size
 	_extendedFrame = (MAX_LEN_DATA>125) ? true : false;
-	//Serial.print(F("Maximum data length is: "));Serial.println(_maxLenData);
+	Serial.print(F("Maximum data length is: "));Serial.println(_maxLenData);
 
 }
 
 // Main function that should be called from arduino
 void ConnectedRangingClass::loop(){
-	//SerialCoder.getSerialData();
+	SerialCoder.getSerialData();
 	checkForReset();
 	if(_sentAck){
 		noteActivity();
@@ -546,4 +549,9 @@ void ConnectedRangingClass::printDataBytes(){
 		Serial.print(_data[i]);Serial.print(F(" "));
 	}
 	Serial.println(F(" "));
+}
+
+// Handle new self state value
+void ConnectedRangingClass::handleNewSelfStateValue(float value, uint8_t type){
+	_selfNode.setSingleState(value, type);
 }

@@ -9,7 +9,7 @@
 #define _DW1000Node_H_INCLUDED
 
 #include "DW1000Device.h"
-//#include "Serial_Coder.h"
+#include "Serial_Coder.h"
 
 // These are the statusses that a node can be set to
 #define INIT_STATUS 0
@@ -23,6 +23,12 @@
 #define RANGE_REPORT_RECEIVED 8
 
 #define STATE_VAR_SIZE 4
+
+// States types
+#define VX 0
+#define VY 1
+#define Z 2
+#define R 3
 
 struct State{
 	float vx;
@@ -53,6 +59,7 @@ public:
 	void setSingleState(float value, uint8_t type);
 	void setRange(float range);
 
+	boolean isStateUpdated();
 
 	// Comparisons
 	boolean operator==(const uint8_t cmp) const;
@@ -92,7 +99,6 @@ protected:
 
 
 };
-
 
 
 

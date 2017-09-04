@@ -59,16 +59,34 @@ void DW1000Node::setStatus(uint8_t status){
 
 void DW1000Node::setState(float vx, float vy, float z, float r){
 	_state.vx = vx; _state.vy = vy; _state.z = z; _state.r = r;
+	for (uint8_t i = 0; i<STATE_VAR_SIZE;i++){
+		_state.stateUpdate[i] = true;
+	}
 }
 
 void DW1000Node::setSingleState(float value, uint8_t type){
-	/*
 	switch(type){
-	case VX: _state.vx = value; break;
-	case VY: _state.vy = value; break;
-	case Z: _state.z = value; break;
-	case R: _state.r = value; break;
-	}*/
+	case VX: _state.vx = value; _state.stateUpdate[VX]=true; break;
+	case VY: _state.vy = value; _state.stateUpdate[VY]=true; break;
+	case Z: _state.z = value; _state.stateUpdate[Z]=true; break;
+	case R: _state.r = value; _state.stateUpdate[R]=true; break;
+	}
+}
+
+boolean DW1000Node::isStateUpdated(){
+	boolean checker = true;
+	for (uint8_t i = 0; i<STATE_VAR_SIZE;i++){
+		checker = checker && _state.stateUpdate[i];
+	}
+	if (checker){
+		for (uint8_t i = 0; i<STATE_VAR_SIZE;i++){
+			_state.stateUpdate[i] = false;
+		}
+		return true;
+	}
+	else{
+		return false;
+	}
 }
 
 // Operators

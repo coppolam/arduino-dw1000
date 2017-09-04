@@ -22,20 +22,21 @@ boolean SerialCoderClass::_allReceived = false;
 
 byte SerialCoderClass::_varByte = 0;
 
-MessageIn SerialCoderClass::_receiveMessages[IN_MESSAGES];
-selfState SerialCoderClass::_selfState;
+//MessageIn SerialCoderClass::_receiveMessages[IN_MESSAGES];
+//selfState SerialCoderClass::_selfState;
 
 // Handlers
-void (* SerialCoderClass::_handleNewSelfState)(void) = 0;
+void (* SerialCoderClass::_handleNewSelfStateValue)(float,uint8_t) = 0;
 
 byte SerialCoderClass::_tempBuffer[MAX_MESSAGE];
-byte SerialCoderClass::_dataSend[MAX_MESSAGE];
+byte SerialCoderClass::_tempBuffer2[MAX_MESSAGE];
 byte SerialCoderClass::_recvBuffer[FLOAT_SIZE];
 
 boolean SerialCoderClass::_bigEndian = false;
 
 
 SerialCoderClass::SerialCoderClass(){
+	/*
 	for (uint8_t i=0;i<IN_MESSAGES;i++){
 		_receiveMessages[i].type = i;
 	}
@@ -43,6 +44,7 @@ SerialCoderClass::SerialCoderClass(){
 		_selfState.updated[i]=false;
 	}
 	checkBigEndian();
+	*/
 }
 
 
@@ -86,22 +88,28 @@ void SerialCoderClass::getSerialData(){
  */
 void SerialCoderClass::decodeHighBytes(){
 	_dataRecvCount = 0;
-	byte msgFrom = _tempBuffer[1];
-	byte msgType = _tempBuffer[2];
-	for (uint8_t i = 3; i<_bytesRecvd-1; i++){ // Skip the begin marker (0), message from (1), message type (2), and end marker (_bytesRecvd-1)
+	byte msgType = _tempBuffer[1];
+	for (uint8_t i = 2; i<_bytesRecvd-1; i++){ // Skip the begin marker (0), message type (1), and end marker (_bytesRecvd-1)
 		_varByte = _tempBuffer[i];
 		if (_varByte == SPECIAL_BYTE){
 			i++;
 			_varByte = _varByte + _tempBuffer[i];
 		}
-		_recvBuffer[_dataRecvCount] = _varByte;
+		if(_dataRecvCount<=FLOAT_SIZE){
+			_recvBuffer[_dataRecvCount] = _varByte;
+		}
 		//Serial.print(F("Stored character is: "));
 		//Serial.println(_varByte);
 		_dataRecvCount++;
 	}
-	updateStateVar(msgFrom,msgType);
+	if(_dataRecvCount==FLOAT_SIZE){
+		float tempfloat;
+		memcpy(&tempfloat,&_recvBuffer,FLOAT_SIZE);
+		_handleNewSelfStateValue(tempfloat,msgType);
+	}
 }
 
+/*
 void SerialCoderClass::updateStateVar(byte msgFrom, byte msgType){
 	switch(msgType){
 	case VX : memcpy(&_selfState.vx,&_recvBuffer,4);break;
@@ -118,34 +126,37 @@ void SerialCoderClass::updateStateVar(byte msgFrom, byte msgType){
 }
 
 boolean SerialCoderClass::stateUpdated(){
+
 	boolean updated = true;
 	for (uint8_t i=0;i<STATE_SIZE;i++){
 		updated = updated && _selfState.updated[i];
 	}
 	return updated;
-}
+}*/
 
 /**
  * Function used to receive a float with a certain message ID
  */
+/*
 float SerialCoderClass::receiveFloat(byte msgtype){
 	float tempfloat;
 	memcpy(&tempfloat,&_receiveMessages[msgtype].msg,4);
 	return tempfloat;
-}
+}*/
 
 /**
  * Function that will send a float over serial. The actual message that will be sent will have
  * a start marker, the from address, the message type, 4 bytes for the float, and the end marker.
  */
-void SerialCoderClass::sendFloat(byte msgfrom,byte msgtype, float outfloat){
-	byte floatbyte[4];
-	memcpy(floatbyte,&outfloat,4);
-	encodeHighBytes(floatbyte,4);
+void SerialCoderClass::sendFloat(byte thisAddress,byte remoteAddress,byte msgtype, float outfloat){
+	byte floatbyte[FLOAT_SIZE];
+	memcpy(floatbyte,&outfloat,FLOAT_SIZE);
+	encodeHighBytes(floatbyte,FLOAT_SIZE);
 	Serial.write(START_MARKER);
-	Serial.write(msgfrom);
+	Serial.write(thisAddress);
+	Serial.write(remoteAddress);
 	Serial.write(msgtype);
-	Serial.write(_tempBuffer,_dataTotalSend);
+	Serial.write(_tempBuffer2,_dataTotalSend);
 	Serial.write(END_MARKER);
 
 }
@@ -160,12 +171,12 @@ void SerialCoderClass::encodeHighBytes(byte* sendData, uint8_t msgSize){
 	_dataTotalSend = 0;
 	for (uint8_t i = 0; i < _dataSendCount; i++){
 		if (sendData[i] >= SPECIAL_BYTE){
-			_tempBuffer[_dataTotalSend] = SPECIAL_BYTE;
+			_tempBuffer2[_dataTotalSend] = SPECIAL_BYTE;
 			_dataTotalSend++;
-			_tempBuffer[_dataTotalSend] = sendData[i] - SPECIAL_BYTE;
+			_tempBuffer2[_dataTotalSend] = sendData[i] - SPECIAL_BYTE;
 		}
 		else{
-			_tempBuffer[_dataTotalSend] = sendData[i];
+			_tempBuffer2[_dataTotalSend] = sendData[i];
 		}
 		_dataTotalSend++;
 	}

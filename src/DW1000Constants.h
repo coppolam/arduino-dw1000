@@ -293,6 +293,6 @@
 #define GPIO_MODE 0
 #define LED_MODE 1
 
-#define MAX_LEN_DATA 200
+
 
 #endif

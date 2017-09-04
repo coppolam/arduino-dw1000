@@ -914,9 +914,6 @@ void DW1000Class::convertToByte(char string[], byte* bytes) {
 }
 
 void DW1000Class::convertCharsToBytes(char string[], byte* bytes, uint16_t n) {
-	if(n>MAX_LEN_DATA){
-		n=MAX_LEN_DATA;
-	}
 	byte    convertbyte[n];
 	for(uint16_t i = 0; i < n; i++) {
 		convertbyte[i] = (byte)string[i];
@@ -925,9 +922,6 @@ void DW1000Class::convertCharsToBytes(char string[], byte* bytes, uint16_t n) {
 }
 
 void DW1000Class::convertBytesToChars(byte* bytes, char string[],  uint16_t n) {
-	if(n>MAX_LEN_DATA){
-		n=MAX_LEN_DATA;
-	}
 	char convertstring[n];
 	for(uint16_t i = 0; i < n; i++) {
 		convertstring[i] = (char)bytes[i];

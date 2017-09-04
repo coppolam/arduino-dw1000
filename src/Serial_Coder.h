@@ -9,11 +9,12 @@
 #define SERIAL_CODER_H_
 
 #include <Arduino.h>
+#include "DW1000Node.h"
 
 
 #define MAX_MESSAGE 10
 #define IN_MESSAGE_SIZE 4
-#define OUT_MESSAGE_SIZE 7
+#define OUT_MESSAGE_SIZE 8
 #define END_MARKER 255
 #define SPECIAL_BYTE 253
 #define START_MARKER 254
@@ -22,24 +23,23 @@
 #define FLOAT_SIZE 4
 #define STATE_SIZE 3
 
-// Message in types
-#define VX 0
-#define VY 1
-#define Z 2
-#define R 3
 
+
+
+/*
 struct MessageIn{
 	byte type;
 	byte msg[IN_MESSAGE_SIZE];
 };
-
+*/
+/*
 struct selfState{
 	float vx;
 	float vy;
 	float z;
 	boolean updated[STATE_SIZE];
 };
-
+*/
 
 /**
  * This class is used for encoding, decoding, sending, and receiving messages that will be sent over Arduino's serial communication.
@@ -55,17 +55,17 @@ public:
 	static void processData();
 	static void decodeHighBytes();
 
-	static float receiveFloat(byte msgtype);
+	//static float receiveFloat(byte msgtype);
 
 
-	static void sendFloat(byte msgfrom, byte msgtype, float outfloat);
+	static void sendFloat(byte thisAddress,byte remoteAddress,byte msgtype, float outfloat);
 	static void encodeHighBytes(byte* sendData, uint8_t msgSize);
 
 	static void checkBigEndian();
 
-	static void attachStateHandle(void (* handleNewSelfState)(void)) { _handleNewSelfState = handleNewSelfState; };
-	static void updateStateVar(byte msgFrom,byte msgType);
-	static boolean stateUpdated();
+	static void attachStateHandle(void (* handleNewSelfStateValue)(float,uint8_t)) { _handleNewSelfStateValue = handleNewSelfStateValue; };
+	//static void updateStateVar(byte msgFrom,byte msgType);
+	//static boolean stateUpdated();
 
 
 
@@ -74,9 +74,9 @@ protected:
 	static byte _dataSentNum;
 	static byte _dataRecvCount;
 
-	//static byte _dataRecvd[MAX_MESSAGE];
-	static byte _dataSend[MAX_MESSAGE];
+
 	static byte _tempBuffer[MAX_MESSAGE];
+	static byte _tempBuffer2[MAX_MESSAGE];
 	static byte _recvBuffer[FLOAT_SIZE];
 
 	static byte _dataSendCount;
@@ -86,15 +86,15 @@ protected:
 	static boolean _startFound;
 	static boolean _allReceived;
 
-	static MessageIn _receiveMessages[IN_MESSAGES];
-	static selfState _selfState;
+	//static MessageIn _receiveMessages[IN_MESSAGES];
+	//static selfState _selfState;
 
 	static byte _varByte;
 
 	static boolean _bigEndian;
 
 	// Handlers
-	static void (* _handleNewSelfState)(void);
+	static void (* _handleNewSelfStateValue)(float,uint8_t);
 
 };
 
