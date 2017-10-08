@@ -67,7 +67,7 @@ public:
 	// initialisation
 	static void init(char longAddress[], uint8_t numNodes);
 	static void init(uint8_t veryShortAddress, uint8_t numNodes);
-	static void initDecawave(byte longAddress[], uint8_t numNodes, const byte mode[] = DW1000.MODE_LONGDATA_FAST_ACCURACY, uint16_t networkID=0xDECA,uint8_t myRST=9, uint8_t mySS=SS, uint8_t myIRQ=2);
+	static void initDecawave(byte longAddress[], uint8_t numNodes, const byte mode[] = DW1000.MODE_LONGDATA_RANGE_ACCURACY, uint16_t networkID=0xDECA,uint8_t myRST=9, uint8_t mySS=SS, uint8_t myIRQ=2);
 
 	// set DW1000 in permanent receiving mode
 	static void receiver();

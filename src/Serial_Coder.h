@@ -21,25 +21,7 @@
 #define IN_MESSAGES 3
 #define OUT_MESSAGES 1
 #define FLOAT_SIZE 4
-#define STATE_SIZE 3
 
-
-
-
-/*
-struct MessageIn{
-	byte type;
-	byte msg[IN_MESSAGE_SIZE];
-};
-*/
-/*
-struct selfState{
-	float vx;
-	float vy;
-	float z;
-	boolean updated[STATE_SIZE];
-};
-*/
 
 /**
  * This class is used for encoding, decoding, sending, and receiving messages that will be sent over Arduino's serial communication.

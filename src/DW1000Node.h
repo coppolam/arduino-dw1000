@@ -22,26 +22,32 @@
 #define RANGE_REPORT_SENT 7
 #define RANGE_REPORT_RECEIVED 8
 
+// Size of the state of a node (should correspond to the number of float variables present in State struct)
 #define STATE_VAR_SIZE 4
 
-// States types
+// State types (corresponding to message types being exchanged over serial)
 #define VX 0
 #define VY 1
 #define Z 2
 #define R 3
 
+// Struct that holds the state of a certain node
 struct State{
 	float vx;
 	float vy;
 	float z;
 	float r;
 	boolean stateUpdate[STATE_VAR_SIZE];
-
 };
 
+/**
+ * This class is a helper class for the ranging protocol defined in ConnectedRangingClass.h.
+ * This class inherits from the DW1000Device class, since a node in the ConnectedRanging protocol
+ * is essential a DW1000Device with some additional functionalities.
+ */
 class DW1000Node: public DW1000Device {
 public:
-	// Constructors and Destructor. All simply call the corresponding DW1000Device constructors.
+	// Constructors and Destructor. Mostly just calls the corresponding DW1000Device constructors and initializes state vars.
 	DW1000Node();
 	DW1000Node(byte address[], byte shortAddress[]);
 	DW1000Node(byte address[], boolean shortOne = true);
@@ -55,7 +61,7 @@ public:
 
 	// Setters
 	void setStatus(uint8_t status);
-	void setState(float vx, float vy, float z, float r=0);
+	void setState(float vx, float vy, float z, float r=0.0); // Default r = 0.0. This allows easy using of the same node class when the node is the current device.
 	void setSingleState(float value, uint8_t type);
 	void setRange(float range);
 
@@ -70,43 +76,35 @@ public:
 	float getRangeFrequency();
 
 protected:
+	/**
+	 * _status is used when this node is a distant node for the device operating.
+	 * Depending on what stage in the protocol the distant node is, it gets assigned a status value.
+	 * This allows the current device to keep track of where in the protocol the different nodes are.
+	 */
 	uint8_t _status = 0;
+
+
+	/**
+	 * This class uses a single byte to store the address of a node. This is more than enough since that means it already supports 255
+	 * devices in principle (first address is 1 and not 0, don't ask why). Since this is way more than I see will ever be needed, I use
+	 * only a single byte. The downside of course is that this is not in line with the IEEE UWB standard.
+	 */
 	byte _veryShortAddress = 0;
+
+	// Counter used to determine the update frequency to this node
 	uint32_t _successRanges = 0;
+
+	// Auxiliary variables used to compute update frequency
 	uint32_t _rangeTimer = millis();
 	float _rangeFreq = 0;
 
+	/**
+	 * The state of the current node. In case the current node is a distant node, then the state will have a non-zero range value
+	 * if the protocol is successful. However, the same node class is also used to represent the device itself, in which case the
+	 * range value will obviously be 0.
+	 */
 	State _state;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 };
-
-
-
-
-
-
-
-
-
 
 #endif
