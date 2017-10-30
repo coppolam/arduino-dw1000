@@ -2,7 +2,7 @@
  * Serial_Coder.c
  *
  *  Created on: Aug 28, 2017
- *      Author: steven
+ *      Author: steven <stevenhelm@live.nl>
  */
 
 #include "Serial_Coder.h"

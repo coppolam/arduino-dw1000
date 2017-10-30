@@ -2,7 +2,7 @@
  * Serial_Coder.h
  *
  *  Created on: Aug 28, 2017
- *      Author: steven
+ *      Author: steven <stevenhelm@live.nl>
  */
 
 #ifndef SERIAL_CODER_H_
