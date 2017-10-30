@@ -1,5 +1,10 @@
 #include <ConnectedRanging.h>
 
+/**
+ * Only variables that need changing. Change numNodes to the number of drones that will be flying. 
+ * On each drone, assign a unique veryShortAddress in incremental fashion starting from 1. So the first drone gets address 1, the second 2, etc. up to numNodes.
+ * Notes: only tested with 2 drones. This arduino code has been tested to work with up to 4 nodes, but the paparazzi side only up to 2.
+ */
 uint8_t numNodes = 2;
 uint8_t veryShortAddress = 2;
 
