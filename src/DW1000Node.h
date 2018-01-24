@@ -23,19 +23,27 @@
 #define RANGE_REPORT_RECEIVED 8
 
 // Size of the state of a node (should correspond to the number of float variables present in State struct)
-#define STATE_VAR_SIZE 4
+#define STATE_VAR_SIZE 7
 
 // State types (corresponding to message types being exchanged over serial)
-#define VX 0
-#define VY 1
-#define Z 2
-#define R 3
+#define R 0
+#define VX 1
+#define VY 2
+#define Z 3
+#define AX 4
+#define AY 5
+#define YAWR 6
+
+
 
 // Struct that holds the state of a certain node
 struct State{
 	float vx;
 	float vy;
 	float z;
+	float ax;
+	float ay;
+	float yawr;
 	float r;
 	boolean stateUpdate[STATE_VAR_SIZE];
 };
@@ -61,7 +69,7 @@ public:
 
 	// Setters
 	void setStatus(uint8_t status);
-	void setState(float vx, float vy, float z, float r=0.0); // Default r = 0.0. This allows easy using of the same node class when the node is the current device.
+	void setState(float vx, float vy, float z, float ax, float ay, float yawr, float r=0.0); // Default r = 0.0. This allows easy using of the same node class when the node is the current device.
 	void setSingleState(float value, uint8_t type);
 	void setRange(float range);
 

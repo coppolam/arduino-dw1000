@@ -17,17 +17,17 @@
  */
 DW1000Node::DW1000Node() : DW1000Device(){
 	_veryShortAddress = _shortAddress[0];
-	_state.vx = 0; _state.vy = 0; _state.z = 0;
+	_state.vx = 0; _state.vy = 0; _state.z = 0; _state.ax = 0; _state.ay = 0; _state.yawr = 0;
 }
 
 DW1000Node::DW1000Node(byte address[], byte shortAddress[])  : DW1000Device(address, shortAddress){
 	_veryShortAddress = address[0];
-	_state.vx = 0; _state.vy = 0; _state.z = 0;
+	_state.vx = 0; _state.vy = 0; _state.z = 0; _state.ax = 0; _state.ay = 0; _state.yawr = 0;
 }
 
 DW1000Node::DW1000Node(byte address[], boolean shortOne) : DW1000Device(address,shortOne){
 	_veryShortAddress = address[0];
-	_state.vx = 0; _state.vy = 0; _state.z = 0;
+	_state.vx = 0; _state.vy = 0; _state.z = 0; _state.ax = 0; _state.ay = 0; _state.yawr = 0;
 }
 
 DW1000Node::~DW1000Node(){
@@ -66,8 +66,8 @@ void DW1000Node::setStatus(uint8_t status){
 	return;
 }
 
-void DW1000Node::setState(float vx, float vy, float z, float r){
-	_state.vx = vx; _state.vy = vy; _state.z = z; _state.r = r;
+void DW1000Node::setState(float vx, float vy, float z ,float ax, float ay, float yawr, float r){
+	_state.vx = vx; _state.vy = vy; _state.z = z; _state.ax = ax; _state.ay = ay; _state.yawr = yawr; _state.r = r;
 	for (uint8_t i = 0; i<STATE_VAR_SIZE;i++){
 		_state.stateUpdate[i] = true;
 	}
@@ -78,6 +78,9 @@ void DW1000Node::setSingleState(float value, uint8_t type){
 	case VX: _state.vx = value; _state.stateUpdate[VX]=true; break;
 	case VY: _state.vy = value; _state.stateUpdate[VY]=true; break;
 	case Z: _state.z = value; _state.stateUpdate[Z]=true; break;
+	case AX: _state.ax = value; _state.stateUpdate[AX]=true; break;
+	case AY: _state.ay = value; _state.stateUpdate[AY]=true; break;
+	case YAWR: _state.yawr = value; _state.stateUpdate[YAWR]=true; break;
 	case R: _state.r = value; _state.stateUpdate[R]=true; break;
 	}
 }

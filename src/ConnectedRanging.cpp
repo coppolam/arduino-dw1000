@@ -56,6 +56,8 @@ uint32_t ConnectedRangingClass::_lastActivity;
 
 uint16_t ConnectedRangingClass::_maxLenData;
 
+uint16_t ConnectedRangingClass::_dataLen = 0;
+
 
 
 // Handlers
@@ -77,7 +79,7 @@ void ConnectedRangingClass::ConnectedRangingClass::init(char longAddress[], uint
 	DW1000.convertToByte(longAddress, _longAddress);
 	initDecawave(_longAddress, numNodes);
 	initNodes();
-	setSelfState(0,0,0);
+	setSelfState(0,0,0,0,0,0);
 	_lastSent = millis();
 	_lastActivity = millis();
 }
@@ -98,7 +100,7 @@ void ConnectedRangingClass::init(uint8_t veryShortAddress,uint8_t numNodes){
 	}
 	initDecawave(_longAddress, numNodes);
 	initNodes();
-	setSelfState(0,0,0);
+	setSelfState(0,0,0,0,0,0);
 
 	_lastSent = millis();
 	_lastActivity = millis();
@@ -208,11 +210,11 @@ void ConnectedRangingClass::loop(){
 
 		if(_rangeSent){
 			_rangeSent = false;
-			transmitData(_data);
+			transmitData(_data,_dataLen);
 		}
 		else{
 			DW1000Time delay = DW1000Time(DEFAULT_REPLY_DELAY_TIME, DW1000Time::MICROSECONDS);
-			transmitData(_data,delay);
+			transmitDataDelay(_data,delay,_dataLen);
 		}
 	}
 
@@ -240,9 +242,16 @@ void ConnectedRangingClass::transmitData(byte datas[]){
 }
 
 // Transmit a byte array with a delay
-void ConnectedRangingClass::transmitData(byte datas[], DW1000Time timeDelay){
+void ConnectedRangingClass::transmitDataDelay(byte datas[], DW1000Time timeDelay){
 	DW1000.setDelay(timeDelay);
 	DW1000.setData(datas,_maxLenData);
+	DW1000.startTransmit();
+}
+
+// Transmit a byte array with a delay
+void ConnectedRangingClass::transmitDataDelay(byte datas[], DW1000Time timeDelay, uint16_t n){
+	DW1000.setDelay(timeDelay);
+	DW1000.setData(datas,n);
 	DW1000.startTransmit();
 }
 
@@ -319,14 +328,20 @@ void ConnectedRangingClass::handleRanges(){
 }
 
 void ConnectedRangingClass::retrieveState(uint16_t *ptr){
-	float vx; float vy; float z;
+	float vx; float vy; float z; float ax; float ay; float yawr;
 	memcpy(&vx,_data+*ptr,FLOAT_SIZE);
 	*ptr += 4;
 	memcpy(&vy,_data+*ptr,FLOAT_SIZE);
 	*ptr += 4;
 	memcpy(&z,_data+*ptr,FLOAT_SIZE);
 	*ptr += 4;
-	_lastNode->setState(vx,vy,z);
+	memcpy(&ax,_data+*ptr,FLOAT_SIZE);
+	*ptr += 4;
+	memcpy(&ay,_data+*ptr,FLOAT_SIZE);
+	*ptr += 4;
+	memcpy(&yawr,_data+*ptr,FLOAT_SIZE);
+	*ptr += 4;
+	_lastNode->setState(vx,vy,z,ax,ay,yawr);
 }
 
 // If a part of the message was not for the current device, skip the pointer ahead to next block of _data
@@ -440,6 +455,7 @@ void ConnectedRangingClass::produceMessage(){
 	for(int i=0;i<_numNodes-1;i++){
 		addMessageToData(&datapointer,&_networkNodes[i]);
 	}
+	_dataLen = datapointer;
 }
 
 void ConnectedRangingClass::addStateToData(uint16_t *ptr){
@@ -449,6 +465,12 @@ void ConnectedRangingClass::addStateToData(uint16_t *ptr){
 	memcpy(_data+*ptr,&(selfState->vy),FLOAT_SIZE);
 	*ptr += FLOAT_SIZE;
 	memcpy(_data+*ptr,&(selfState->z),FLOAT_SIZE);
+	*ptr += FLOAT_SIZE;
+	memcpy(_data+*ptr,&(selfState->ax),FLOAT_SIZE);
+	*ptr += FLOAT_SIZE;
+	memcpy(_data+*ptr,&(selfState->ay),FLOAT_SIZE);
+	*ptr += FLOAT_SIZE;
+	memcpy(_data+*ptr,&(selfState->yawr),FLOAT_SIZE);
 	*ptr += FLOAT_SIZE;
 }
 
@@ -535,8 +557,8 @@ void ConnectedRangingClass::noteActivity(){
 	_lastActivity = millis();
 }
 
-void ConnectedRangingClass::setSelfState(float vx, float vy, float z){
-	_selfNode.setState(vx,vy,z);
+void ConnectedRangingClass::setSelfState(float vx, float vy, float z, float ax, float ay, float yawr){
+	_selfNode.setState(vx,vy,z,ax,ay,yawr);
 }
 
 DW1000Node* ConnectedRangingClass::getDistantNode(){

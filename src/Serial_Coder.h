@@ -12,7 +12,7 @@
 #include "DW1000Node.h"
 
 
-#define MAX_MESSAGE 10
+#define MAX_MESSAGE 20
 #define IN_MESSAGE_SIZE 4
 #define OUT_MESSAGE_SIZE 8
 #define END_MARKER 255

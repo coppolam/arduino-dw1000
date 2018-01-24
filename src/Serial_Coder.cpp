@@ -65,8 +65,13 @@ void SerialCoderClass::getSerialData(){
 		}
 
 		if (_inProgress){
-			_tempBuffer[_bytesRecvd] = _varByte;
-			_bytesRecvd++;
+			if(_bytesRecvd<MAX_MESSAGE-1){
+				_tempBuffer[_bytesRecvd] = _varByte;
+				_bytesRecvd++;
+			}
+			else{
+				_inProgress = false;
+			}
 		}
 
 		if (_varByte == END_MARKER){

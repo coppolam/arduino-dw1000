@@ -41,21 +41,27 @@
 
 
 // reply time in us
-#define DEFAULT_REPLY_DELAY_TIME 5000
+#define DEFAULT_REPLY_DELAY_TIME 3300
 
-#define STATE_SIZE 12
+
 
 #define FLOAT_SIZE 4
+
+#define STATE_SIZE 24
 
 // maximum number of nodes that can be connected. Warning: Consumes a lot of SRAM. Need to optimize if going beyond 4 nodes.
 #define MAX_NODES 4
 #define MAX_LEN_DATA (MAX_NODES-1)*RANGE_SIZE+MAX_NODES+STATE_SIZE
 
 // Serial message types
-#define VX 0
-#define VY 1
-#define Z 2
-#define R 3
+#define R 0
+#define VX 1
+#define VY 2
+#define Z 3
+#define AX 4
+#define AY 5
+#define YAWR 6
+
 
 
 class ConnectedRangingClass {
@@ -77,7 +83,8 @@ public:
 	static void transmitData(byte datas[]);
 	static void transmitData(char datas[]);
 	static void transmitData(char datas[],uint16_t n);
-	static void transmitData(byte datas[], DW1000Time timeDelay);
+	static void transmitDataDelay(byte datas[], DW1000Time timeDelay);
+	static void transmitDataDelay(byte datas[], DW1000Time timeDelay, uint16_t n);
 
 	// main loop
 	static void loop();
@@ -115,7 +122,7 @@ public:
 	static void addStateToData(uint16_t *ptr);
 
 	// Setting state variables when they come in via serial
-	static void setSelfState(float vx, float vy, float z);
+	static void setSelfState(float vx, float vy, float z, float ax, float ay, float yawr);
 
 	// Getters
 	static DW1000Node* getDistantNode();
@@ -177,6 +184,9 @@ protected:
 	static uint32_t _lastActivity;
 
 	static uint16_t _maxLenData;
+
+	// Length of data
+	static uint16_t _dataLen;
 
 
 	// Handlers
